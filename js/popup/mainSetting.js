@@ -1,77 +1,90 @@
-const txtBlurChk = document.getElementById("text-blur");
-const txtFlipChk = document.getElementById("text-flip");
-const txtPixelChk = document.getElementById("text-pixel");
-const txtDimChk = document.getElementById("text-dim");
-const mdaBlurChk = document.getElementById("media-blur");
-const mdaFlipChk = document.getElementById("media-flip");
-const mdaPixelChk = document.getElementById("media-pixel");
-const mdaDimChk = document.getElementById("media-dim");
+const METHOD_ORDER = ["blur", "flip", "pixelate", "opacity"];
+
 const blurRange = document.getElementById("blur-val");
 const opacityRange = document.getElementById("opacity-val");
 const blurDesc = document.getElementById("blur-desc");
 const opacityDesc = document.getElementById("opacity-desc");
 const pinnedColor = document.getElementById("pinned-color");
-const setColor = document.getElementById("change-color");
-const setObfuscate = document.getElementById("set-obfuscate");
-const resetObfuscate = document.getElementById("reset-obfuscate");
-const changePassword = document.getElementById("change-password");
-const changeLanguage = document.getElementById("change-language");
-const exportData = document.getElementById("export-data");
-const importData = document.getElementById("import-data");
-
-// Checkbox for each obfuscation method, in the order the methods are saved.
-const textCheckboxes = { blur: txtBlurChk, flip: txtFlipChk, pixelate: txtPixelChk, opacity: txtDimChk };
-const mediaCheckboxes = { blur: mdaBlurChk, flip: mdaFlipChk, pixelate: mdaPixelChk, opacity: mdaDimChk };
-
-function checkMethods(methods, checkboxes) {
-	methods.forEach((method) => {
-		if (Object.hasOwn(checkboxes, method)) checkboxes[method].checked = true;
-	});
-}
-
-function getCheckedMethods(checkboxes) {
-	return Object.keys(checkboxes).filter((method) => checkboxes[method].checked);
-}
-
-function initObfData(data) {
-	const { obfMethod } = data.preferences;
-	checkMethods(obfMethod.text, textCheckboxes);
-	checkMethods(obfMethod.image, mediaCheckboxes);
-	blurDesc.textContent = String(obfMethod.blurIntensity).padStart(2, "0");
-	opacityDesc.textContent = String(obfMethod.brightnessIntensity).padStart(2, "0");
-	blurRange.value = obfMethod.blurIntensity;
-	opacityRange.value = obfMethod.brightnessIntensity;
-	pinnedColor.value = data.preferences.pinnedColor;
-}
-
-// Reads the latest stored data, applies `change` to it and saves it, so a save never undoes changes made
-// elsewhere (in another tab, or by the right-click menu) since this page opened.
-function updateStored(change) {
-	storage.get(null, (data) => {
-		change(data);
-		storage.set(data);
-	});
-}
-
+const passwordButton = document.getElementById("change-password");
+const passwordStatus = document.getElementById("password-status");
+const passwordCollapse = document.getElementById("password-collapse");
 const passwordForm = document.getElementById("password-form");
 const passwordCurrent = document.getElementById("password-current");
 const passwordNew = document.getElementById("password-new");
 const passwordConfirm = document.getElementById("password-confirm");
 const passwordMessage = document.getElementById("password-message");
+const importInput = document.getElementById("import-data");
+const importConfirm = document.getElementById("import-confirm");
+
+function chips(group) {
+	return [...document.querySelectorAll(`.chips[data-group="${group}"] .chip`)];
+}
+
+// The methods picked in a chip group, in the order v2 saved them.
+function pickedMethods(group) {
+	const picked = chips(group)
+		.filter((chip) => chip.getAttribute("aria-pressed") === "true")
+		.map((chip) => chip.getAttribute("data-method"));
+	return METHOD_ORDER.filter((method) => picked.includes(method));
+}
+
+function showObfuscation(obfMethod) {
+	for (const group of ["text", "image"]) {
+		chips(group).forEach((chip) => {
+			chip.setAttribute("aria-pressed", String(obfMethod[group].includes(chip.getAttribute("data-method"))));
+		});
+	}
+	blurRange.value = obfMethod.blurIntensity;
+	opacityRange.value = obfMethod.brightnessIntensity;
+	blurDesc.textContent = blurRange.value;
+	opacityDesc.textContent = opacityRange.value;
+}
+
+function showSettings(data) {
+	showObfuscation(data.preferences.obfMethod);
+	pinnedColor.value = data.preferences.pinnedColor;
+	const hasPassword = !!data.preferences.password;
+	passwordButton.textContent = passwordCollapse.classList.contains("open") ? "Close" : hasPassword ? "Change" : "Set";
+	passwordStatus.textContent = hasPassword
+		? "Unlocks locked chats and this popup."
+		: "Not set yet. Locked chats and this popup need one.";
+	passwordCurrent.hidden = !hasPassword;
+}
+
+// Reads the latest stored data, applies `change` to it and saves it, so a save never undoes changes made
+// elsewhere (in another tab, or by the right-click menu) since this page opened.
+async function updateStored(change) {
+	const data = await loadData();
+	change(data);
+	await storage.set(data);
+	showToast("Saved");
+}
+
+function saveObfuscation() {
+	return updateStored((data) => {
+		const obfMethod = data.preferences.obfMethod;
+		obfMethod.text = pickedMethods("text");
+		obfMethod.image = pickedMethods("image");
+		obfMethod.blurIntensity = Number(blurRange.value);
+		obfMethod.brightnessIntensity = Number(opacityRange.value);
+	});
+}
+
+// ---------- password ----------
 
 function showPasswordMessage(text, isError) {
 	passwordMessage.textContent = text;
-	if (isError) passwordMessage.classList.add("hc-error");
-	else passwordMessage.classList.remove("hc-error");
+	if (isError) passwordMessage.classList.add("error");
+	else passwordMessage.classList.remove("error");
 }
 
-// Shows or hides the password form. The current-password field only appears when a password is set.
 async function togglePasswordForm() {
-	const data = await getStoredData();
-	passwordCurrent.hidden = !data.preferences.password;
-	passwordForm.hidden = !passwordForm.hidden;
+	const open = !passwordCollapse.classList.contains("open");
+	if (open) passwordCollapse.classList.add("open");
+	else passwordCollapse.classList.remove("open");
 	showPasswordMessage("", false);
-	if (!passwordForm.hidden) (passwordCurrent.hidden ? passwordNew : passwordCurrent).focus();
+	showSettings(await loadData());
+	if (open) (passwordCurrent.hidden ? passwordNew : passwordCurrent).focus();
 }
 
 async function savePassword(event) {
@@ -79,7 +92,7 @@ async function savePassword(event) {
 	const button = passwordForm.querySelector("button");
 	button.disabled = true;
 	try {
-		const data = await getStoredData();
+		const data = await loadData();
 		if (data.preferences.password && !(await verifyPassword(passwordCurrent.value, data.preferences.password))) {
 			showPasswordMessage("The current password is wrong.", true);
 			return;
@@ -95,73 +108,81 @@ async function savePassword(event) {
 		data.preferences.password = await hashPassword(passwordNew.value);
 		await storage.set(data);
 		passwordCurrent.value = passwordNew.value = passwordConfirm.value = "";
-		passwordCurrent.hidden = false;
 		showPasswordMessage("Password saved.", false);
 	} finally {
 		button.disabled = false;
 	}
 }
 
+// ---------- import ----------
+
+let pendingImport = null;
+
+async function chooseImportFile(event) {
+	const file = event.target.files[0];
+	importInput.value = "";
+	if (!file) return;
+	try {
+		pendingImport = await readImportFile(file);
+		importConfirm.hidden = false;
+	} catch (error) {
+		pendingImport = null;
+		showToast(error.message);
+	}
+}
+
+async function replaceWithImport() {
+	if (!pendingImport) return;
+	await replaceStoredData(pendingImport);
+	pendingImport = null;
+	importConfirm.hidden = true;
+	showToast("Backup restored");
+}
+
+// ---------- page ----------
+
+fillIcons();
 themeToggle();
 
 // Nothing is wired up until the page is unlocked.
-requireUnlock(() => storage.get(null, (data) => {
-	initObfData(data);
+requireUnlock(async () => {
+	showSettings(await loadData());
 
-	setObfuscate.addEventListener("click", () => {
-		updateStored((latest) => {
-			latest.preferences.obfMethod.text = getCheckedMethods(textCheckboxes);
-			latest.preferences.obfMethod.image = getCheckedMethods(mediaCheckboxes);
-			latest.preferences.obfMethod.blurIntensity = blurRange.value;
-			latest.preferences.obfMethod.brightnessIntensity = opacityRange.value;
+	for (const group of ["text", "image"]) {
+		chips(group).forEach((chip) => {
+			chip.addEventListener("click", () => {
+				chip.setAttribute("aria-pressed", String(chip.getAttribute("aria-pressed") !== "true"));
+				saveObfuscation();
+			});
+		});
+	}
+	blurRange.addEventListener("input", () => (blurDesc.textContent = blurRange.value));
+	opacityRange.addEventListener("input", () => (opacityDesc.textContent = opacityRange.value));
+	blurRange.addEventListener("change", () => saveObfuscation());
+	opacityRange.addEventListener("change", () => saveObfuscation());
+	document.getElementById("reset-obfuscate").addEventListener("click", () => {
+		showObfuscation(defaultPreferences().obfMethod);
+		saveObfuscation();
+	});
+
+	pinnedColor.addEventListener("change", () => {
+		updateStored((data) => {
+			data.preferences.pinnedColor = pinnedColor.value;
 		});
 	});
 
-	resetObfuscate.addEventListener("click", () => {
-		txtBlurChk.checked = false;
-		txtFlipChk.checked = true;
-		txtPixelChk.checked = false;
-		txtDimChk.checked = true;
-		mdaBlurChk.checked = true;
-		mdaFlipChk.checked = false;
-		mdaPixelChk.checked = true;
-		mdaDimChk.checked = false;
-		blurRange.value = 5;
-		opacityRange.value = 0.3;
-		blurDesc.textContent = blurRange.value.padStart(2, "0");
-		opacityDesc.textContent = opacityRange.value.padStart(2, "0");
-	});
-
-	blurRange.addEventListener("change", () => {
-		blurDesc.textContent = blurRange.value.padStart(2, "0");
-	});
-	opacityRange.addEventListener("change", () => {
-		opacityDesc.textContent = opacityRange.value.padStart(2, "0");
-	});
-
-	changePassword.addEventListener("click", () => togglePasswordForm());
+	passwordButton.addEventListener("click", () => togglePasswordForm());
 	passwordForm.addEventListener("submit", savePassword);
-	changeLanguage.addEventListener("click", () => {
-		alert(
-			"I can only support English for now, but any help in translating is welcome. Please contact me at: dalmanjunivanne@gmail.com"
-		);
+
+	document.getElementById("export-data").addEventListener("click", () => exportDataToJson());
+	importInput.addEventListener("change", chooseImportFile);
+	document.getElementById("import-replace").addEventListener("click", () => replaceWithImport());
+	document.getElementById("import-cancel").addEventListener("click", () => {
+		pendingImport = null;
+		importConfirm.hidden = true;
 	});
 
-	exportData.addEventListener("click", () => {
-		exportDataToJson();
+	chrome.storage.onChanged.addListener(async (changes, area) => {
+		if (area === "local") showSettings(await loadData());
 	});
-	importData.addEventListener("change", (event) => {
-		const file = event.target.files[0];
-		if (file) importDataToStorage(file);
-	});
-
-	setColor.addEventListener("click", () => {
-		updateStored((latest) => {
-			latest.preferences.pinnedColor = pinnedColor.value;
-		});
-	});
-
-	chrome.storage.onChanged.addListener(() => {
-		storage.get(null, (latest) => initObfData(latest));
-	});
-}));
+});

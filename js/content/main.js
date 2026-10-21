@@ -26,6 +26,8 @@ function apply() {
 
 function load() {
 	storage.get(null, (stored) => {
+		// Data from an older version waits until the background has upgraded it (on install or update).
+		if (!stored.preferences || !Array.isArray(stored.messengerChats)) return;
 		data = stored;
 		refreshStyles();
 		apply();
@@ -48,9 +50,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		case "toggleHiddenAll":
 			showHiddenChats = !showHiddenChats;
 			if (data) refreshStyles();
-			break;
+			sendResponse(showHiddenChats);
+			return true;
 		case "health":
-			sendResponse(Page.health());
+			sendResponse({ ...Page.health(), showHiddenChats });
 			return true;
 		default:
 			break;

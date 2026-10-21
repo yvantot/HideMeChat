@@ -1,16 +1,6 @@
-importScripts("/js/shared/password.js");
+importScripts("/js/shared/password.js", "/js/shared/storage.js");
 
-let storage = chrome.storage.local;
-let preferenceData = {
-	obfMethod: {
-		text: ["opacity", "flip"],
-		image: ["blur", "pixelate"],
-		blurIntensity: 5,
-		brightnessIntensity: 0.3,
-	},
-	pinnedColor: "#162184",
-	userTheme: "light",
-};
+const storage = chrome.storage.local;
 
 function createContexts() {
 	const documentUrlPatterns = ["*://www.messenger.com/*", "*://www.facebook.com/*"];
@@ -22,51 +12,15 @@ function createContexts() {
 	];
 	const shared = { contexts: ["link"], documentUrlPatterns, targetUrlPatterns };
 
-	chrome.contextMenus.create({ id: "hidechatMain", title: "Hide Chat: Private Messenger", ...shared });
+	chrome.contextMenus.create({ id: "hidechatMain", title: "Hide Me Chat", ...shared });
 	const items = [
-		["hideAllChatExcept", "Hide EVERYTHING except this chat"],
-		["hideThisChat", "Hide THIS chat"],
-		["pinThisChat", "Pin THIS chat"],
-		["lockThisChat", "Lock THIS chat"],
-		["obfuscateThisChat", "Obfuscate THIS chat"],
+		["hideThisChat", "Hide this chat"],
+		["hideAllChatExcept", "Hide all other chats"],
+		["pinThisChat", "Pin this chat"],
+		["obfuscateThisChat", "Obfuscate this chat"],
+		["lockThisChat", "Lock this chat"],
 	];
 	items.forEach(([id, title]) => chrome.contextMenus.create({ id, parentId: "hidechatMain", title, ...shared }));
-}
-
-// Creates empty storage on first install, and converts v1 data (a list of hidden chat URLs) to the v2 format.
-function initStorage() {
-	storage.get(null, (oldData) => {
-		if (Object.keys(oldData).length === 0) {
-			storage.set({ preferences: preferenceData, messengerChats: [] });
-			return;
-		}
-		if (!oldData.hidden_chat) return;
-
-		storage.clear();
-		storage.set({ preferences: preferenceData, messengerChats: [] }, () => {
-			storage.get(null, (data) => {
-				oldData.hidden_chat.forEach((chatUrl) => {
-					data.messengerChats.push({
-						chatName: chatUrl,
-						chatImg: "#",
-						chatURL: chatUrl,
-						lastMsg: "#",
-						dateAdded: getDateNow(),
-						isHidden: true,
-						isLocked: false,
-						isPinned: false,
-						isObfuscated: false,
-					});
-				});
-				storage.set(data);
-			});
-		});
-	});
-}
-
-function getDateNow() {
-	const now = new Date();
-	return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 // Adds `chat` (as sent by the content script) to the stored chats with `flag` turned on, or refreshes its details
@@ -81,7 +35,7 @@ function upsertChat(data, knownUrls, chat, flag) {
 			chatImg: chat.img,
 			chatURL: chat.url,
 			lastMsg: chat.lastMsg,
-			dateAdded: flag === "isHidden" ? getDateNow() : stored.dateAdded,
+			dateAdded: flag === "isHidden" ? dateToday() : stored.dateAdded,
 			isHidden: stored.isHidden,
 			isLocked: stored.isLocked,
 			isPinned: stored.isPinned,
@@ -94,7 +48,7 @@ function upsertChat(data, knownUrls, chat, flag) {
 			chatImg: chat.img,
 			chatURL: chat.url,
 			lastMsg: chat.lastMsg,
-			dateAdded: getDateNow(),
+			dateAdded: dateToday(),
 			isHidden: false,
 			isLocked: false,
 			isPinned: false,
@@ -109,13 +63,11 @@ function upsertChat(data, knownUrls, chat, flag) {
 function flagClickedChat(linkUrl, flag) {
 	chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 		if (!tabs[0]) return;
-		chrome.tabs.sendMessage(tabs[0].id, { message: "getThisChat", clickedChat: linkUrl }, null, (chat) => {
+		chrome.tabs.sendMessage(tabs[0].id, { message: "getThisChat", clickedChat: linkUrl }, null, async (chat) => {
 			if (chrome.runtime.lastError || !chat) return;
-			storage.get(null, (data) => {
-				const knownUrls = new Set(data.messengerChats.map((stored) => stored.chatURL));
-				upsertChat(data, knownUrls, chat, flag);
-				storage.set(data);
-			});
+			const data = await loadData();
+			upsertChat(data, new Set(data.messengerChats.map((stored) => stored.chatURL)), chat, flag);
+			await storage.set(data);
 		});
 	});
 }
@@ -124,18 +76,15 @@ function flagClickedChat(linkUrl, flag) {
 function hideAllChatsExcept(linkUrl) {
 	chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 		if (!tabs[0]) return;
-		chrome.tabs.sendMessage(tabs[0].id, { message: "getAllChat" }, null, (chats) => {
+		chrome.tabs.sendMessage(tabs[0].id, { message: "getAllChat" }, null, async (chats) => {
 			if (chrome.runtime.lastError || !Array.isArray(chats)) return;
-			storage.get(null, (data) => {
-				const knownUrls = new Set(data.messengerChats.map((stored) => stored.chatURL));
-				const keptUrl = linkUrl
-					.replace("https://www.facebook.com/messages", "")
-					.replace("https://www.messenger.com", "");
-				chats.forEach((chat) => {
-					if (chat.url != keptUrl) upsertChat(data, knownUrls, chat, "isHidden");
-				});
-				storage.set(data);
+			const data = await loadData();
+			const knownUrls = new Set(data.messengerChats.map((stored) => stored.chatURL));
+			const keptUrl = linkUrl.replace("https://www.facebook.com/messages", "").replace("https://www.messenger.com", "");
+			chats.forEach((chat) => {
+				if (chat.url !== keptUrl) upsertChat(data, knownUrls, chat, "isHidden");
 			});
+			await storage.set(data);
 		});
 	});
 }
@@ -159,17 +108,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	}
 });
 
-// Replaces a plain-text password left by v2 with its hash.
-function upgradeStoredPassword() {
-	storage.get(null, async (data) => {
-		if (await upgradeLegacyPassword(data)) storage.set(data);
-	});
-}
-
+// Runs on install and on every update: brings stored data from any older version up to date, and recreates the
+// menu (the old version's items may still exist).
 chrome.runtime.onInstalled.addListener(() => {
-	initStorage();
-	upgradeStoredPassword();
-	// onInstalled also runs on updates, when the menu items from the old version may still exist.
+	loadData();
 	chrome.contextMenus.removeAll(() => createContexts());
 });
 

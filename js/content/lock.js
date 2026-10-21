@@ -25,13 +25,22 @@ function updateLock(data) {
 	setFlag(host, "data-hc-lock-host", true);
 
 	const existing = document.getElementById("hc-lockedmain");
-	if (existing?.parentElement === host && existing.getAttribute("data-chat") === chat) return;
+	if (existing?.parentElement === host && existing.getAttribute("data-chat") === chat && !isLeaving(existing)) return;
 	existing?.remove();
 	host.insertBefore(lockScreen(chat), host.firstChild);
 }
 
+function isLeaving(element) {
+	return element.hasAttribute("data-leaving");
+}
+
+// The lock screen fades out over the revealed chat before it's removed.
 function removeLockScreen() {
-	document.getElementById("hc-lockedmain")?.remove();
+	const screen = document.getElementById("hc-lockedmain");
+	if (screen && !isLeaving(screen)) {
+		screen.setAttribute("data-leaving", "");
+		setTimeout(() => screen.remove(), 250);
+	}
 	document.querySelectorAll("[data-hc-lock-host]").forEach((el) => el.removeAttribute("data-hc-lock-host"));
 }
 
@@ -41,7 +50,7 @@ function lockScreen(chat) {
 	screen.setAttribute("id", "hc-lockedmain");
 	screen.setAttribute("data-chat", chat);
 	const frame = document.createElement("iframe");
-	frame.setAttribute("title", "HideMeChat lock screen");
+	frame.setAttribute("title", "Hide Me Chat lock screen");
 	frame.setAttribute("src", chrome.runtime.getURL(`html/lock.html?chat=${encodeURIComponent(chat)}`));
 	frame.addEventListener("load", () => frame.focus());
 	screen.appendChild(frame);
@@ -54,7 +63,7 @@ function listenForUnlock(onUnlock) {
 	window.addEventListener("message", (event) => {
 		if (event.origin !== EXTENSION_ORIGIN || event.data?.hidechat !== "unlocked") return;
 		const screen = document.getElementById("hc-lockedmain");
-		if (!screen || event.source !== screen.querySelector("iframe")?.contentWindow) return;
+		if (!screen || isLeaving(screen) || event.source !== screen.querySelector("iframe")?.contentWindow) return;
 		unlockedChats.add(screen.getAttribute("data-chat"));
 		onUnlock();
 	});
@@ -82,10 +91,10 @@ function popupLockNote(chatUrl) {
 	const note = document.createElement("div");
 	note.setAttribute("class", "hc-popup-lock");
 	const text = document.createElement("p");
-	text.textContent = "This chat is locked.";
+	text.textContent = "This chat is locked";
 	const link = document.createElement("a");
 	link.setAttribute("href", Page.chatHref(chatUrl));
-	link.textContent = "Open it to unlock";
+	link.textContent = "Open to unlock";
 	note.append(text, link);
 	return note;
 }
@@ -115,13 +124,20 @@ const LOCK_CSS = `
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background-color: rgba(0, 0, 0, 0.8);
-		backdrop-filter: blur(10px);
+		background-color: rgba(18, 20, 30, 0.45);
+		backdrop-filter: blur(18px);
+		animation: hc-fade-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+		transition: opacity 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	#hc-lockedmain[data-leaving] {
+		opacity: 0;
+		pointer-events: none;
 	}
 	#hc-lockedmain iframe {
-		width: 380px;
+		width: 360px;
 		max-width: 100%;
-		height: 320px;
+		height: 440px;
+		max-height: 100%;
 		border: none;
 		background: transparent;
 		color-scheme: normal;
@@ -134,23 +150,42 @@ const LOCK_CSS = `
 	}
 	.hc-popup-lock {
 		position: absolute;
-		inset: 0;
+		inset: 10px;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 6px;
-		background-color: rgba(0, 0, 0, 0.8);
-		color: #fafafa;
-		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-		font-size: 14px;
+		gap: 4px;
+		border-radius: 16px;
+		background-color: rgba(28, 31, 40, 0.92);
+		color: #e9ebf2;
+		font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 		text-align: center;
+		animation: hc-fade-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 	}
 	.hc-popup-lock p {
 		margin: 0;
+		font-weight: 600;
 	}
 	.hc-popup-lock a {
-		color: #93c5fd;
-		text-decoration: underline;
+		padding: 6px 14px;
+		margin-top: 6px;
+		border-radius: 999px;
+		background-color: #8f98ff;
+		color: #14162a;
+		font-weight: 600;
+		text-decoration: none;
+	}
+	@keyframes hc-fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		#hc-lockedmain,
+		.hc-popup-lock {
+			animation: none;
+			transition: none;
+		}
 	}
 `;

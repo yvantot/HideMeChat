@@ -57,16 +57,29 @@ Done:
 
 ## 6. Data and migration
 
+Done: `js/shared/storage.js` defines the stored data (schemaVersion 3) and one `migrateData` path for v1, v2 and partial data. It's used on install/update, on import, and by every page that reads storage.
+
 - Add a schema version to storage, and migrate v2 data and the old v1 `hidden_chat` format the same way `initStorage` does now.
 - Keep the shared `/t/<id>/` key so a chat set up on one site applies on the other. Treat `e2ee` chats as their own key, as now.
 
 ## 7. Testing
+
+Done:
+- **Tests:** `node tests/run.js`, with no dependencies.
+- **Captures:** sanitized captures of the three live pages are in `tests/fixtures/`, made with `tests/tools/snapshot.js`.
+- **Manual checks:** `docs/release-checklist.md`, including running `Page.health()` from the console.
 
 - Keep a few cleaned HTML snapshots of each page (with names and messages removed) to check the anchor layer against without logging in.
 - Keep a short manual checklist covering 3 pages × regular/E2EE chats × each feature, run before every release.
 - Turn the health check from step 2 into something that can be run from the console.
 
 ## 8. Release
+
+Done:
+- **Version:** 3.0.0, with a "What's new" section in the README and a packaging command in the checklist.
+- **UI redesign:** the popup, settings and lock screen use one hand-written stylesheet (`css/ui.css`) instead of the compiled Tailwind file.
+- **Removed:** personal and promotional content.
+- **Not done:** the Chrome Web Store listing has to be updated by hand, and Firefox is still optional.
 
 - Version 3.0.0. Update the README and store listing, and note what changed with the lock.
 - Optional later: a Firefox build, since it supports Manifest V3 too.

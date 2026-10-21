@@ -3,204 +3,122 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Settings</title>
-		<meta name="description" content="Hide Chat settings" />
-		<meta name="author" content="Jun Ivanne Dalman" />
-		<link rel="stylesheet" href="../css/popup.css" />
-		<link rel="stylesheet" href="../css/lock.css" />
+		<title>Hide Me Chat settings</title>
+		<link rel="stylesheet" href="../css/ui.css" />
+		<script src="../js/shared/icons.js" defer></script>
 		<script src="../js/shared/password.js" defer></script>
+		<script src="../js/shared/storage.js" defer></script>
 		<script src="../js/popup/utilities.js" defer></script>
 		<script src="../js/popup/mainSetting.js" defer></script>
-		<style>@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
-.pixelate:hover{
-filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='b' x='0' y='0'%3E%3CfeFlood x='4' y='4' height='2' width='2'/%3E%3CfeComposite width='10' height='10'/%3E%3CfeTile result='a'/%3E%3CfeComposite in='SourceGraphic' in2='a' operator='in'/%3E%3CfeMorphology operator='dilate' radius='5'/%3E%3C/filter%3E%3C/svg%3E#b");}
-input[type="range"]{
--webkit-appearance: none;
-appearance: none;
-background: transparent;
-cursor: pointer;
-width: 100%;}
-input[type="range"]::-webkit-slider-runnable-track{
-height: 1.3rem;
-background-color: #ebebeb;
-border-radius: 5px;}
-input[type="range"]::-webkit-slider-thumb{
-position: relative;
--webkit-appearance: none;
-appearance: none;
-height: 1.3rem;
-width: 20px;
-border-radius: 3px;
-background-color: rgb(110, 110, 221);}
-</style>
 	</head>
-	<body class="w-96 h-fit min-h-52 font-Main text-gray-800 dark:text-gray-100 dark:bg-gray-900 select-none">
-		<div id="hc-gate" class="hc-gate" hidden>
-			<form id="hc-gate-form" class="hc-card">
-				<h1>HideMeChat is locked</h1>
-				<input id="hc-gate-password" class="hc-field" type="password" placeholder="Password" autocomplete="current-password" maxlength="126" />
-				<button class="hc-button" type="submit">Unlock</button>
-				<p id="hc-gate-message" class="hc-message hc-error" role="status"></p>
-			</form>
+	<body class="popup">
+		<div id="hc-gate" class="gate" hidden>
+			<div class="gate-card">
+				<span class="lock-badge" data-icon="lock"></span>
+				<h1>Hide Me Chat is locked</h1>
+				<p class="hint">Enter your password to change settings.</p>
+				<form id="hc-gate-form">
+					<input id="hc-gate-password" class="field" type="password" placeholder="Password" autocomplete="current-password" maxlength="126" />
+					<button class="button primary" type="submit">Unlock</button>
+					<p id="hc-gate-message" class="message error" role="status"></p>
+				</form>
+			</div>
 		</div>
-		<header class="flex items-center justify-between mx-3 mt-3 mb-6">
-			<div class="flex items-center" title="Changes v1.5.0: &#013;-You can now pin messages&#013;-You can now lock messages&#013;-You can now obfuscate messages&#013;-Improved UI&#013;-Added exportability&#013;-Code optimization&#013;-Strengthened compatibility">
-				<img class="size-10" src="../assets/hidechat_icon48.png" alt="" />
-				<div class="ml-3">
-					<div class="flex font-semibold gap-2 items-baseline">
-						<h1 class="text-lg font-bold">Hide Chat</h1>
-						<span class="text-xs font-bold">v2.0.0</span>
-						<p class="text-green-500">Free</p>
-					</div>
-					<span class="text-xs opacity-60">Make Messenger private</span>
-				</div>
-			</div>
-			<div class="flex gap-3 items-center">
-				<label class="inline-flex cursor-pointer relative items-center h-fit overflow-hidden rounded-full border-2 dark:border-gray-400 border-blue-400">
-					<input type="checkbox" class="sr-only peer" id="toggle-theme" />
-					<div class="w-8 h-5 bg-blue-600 peer-checked:bg-blue-950"></div>
-					<div class="size-4 bg-yellow-400 border-2 border-yellow-200 rounded-full absolute top-0.5 left-0.5 peer-checked:translate-x-3 transition-all peer-checked:bg-gray-300 peer-checked:border-gray-200 duration-500"></div>
-					<div class="w-2 h-3 rounded-full bg-gray-100 absolute bottom-0 -right-0.5 peer-checked:-translate-x-7 transition-transform duration-1000"></div>
-					<div class="w-[0.66rem] h-2 rounded-full bg-gray-100 absolute bottom-0 right-1 peer-checked:-translate-x-4 transition-transform duration-700"></div>
-				</label>
-				<a title="Settings" href="./popup.html">
-					<img src="../assets/settings.svg" alt="" />
-				</a>
-			</div>
+
+		<header class="topbar">
+			<a href="./popup.html" class="icon-button" title="Back" aria-label="Back" data-icon="back"></a>
+			<div class="title"><h1>Settings</h1></div>
+			<button id="toggle-theme" class="icon-button" type="button" title="Switch theme" aria-label="Switch theme" data-icon="moon"></button>
 		</header>
-		<main class="m-2">
-			<h1 class="text-base font-bold py-1 px-1 mx-2 border-y-2 dark:border-gray-800 dark:text-gray-400">Settings</h1>
-			<section class="p-2 rounded-md shadow-md text-gray-500">
-				<h2 class="text-gray-500 text-sm font-semibold dark:text-gray-400">Change obfuscation methods</h2>
-				<p class="text-xs text-gray-400 mb-2 dark:text-gray-500">You can combine methods or choose only one</p>
-				<div class="grid-cols-5 items-center grid border-b-2 border-gray-100 dark:border-gray-800">
-					<div class="font-semibold col-span-1 text-gray-500">Text</div>
-					<div class="flex gap-2 justify-between items-center p-1 py-2 border-gray-200 col-span-4">
-						<label class="relative flex gap-2 justify-between items-center py-1 px-2 cursor-pointer hover:scale-110 hover:opacity-50 transition-transform">
-							<input class="sr-only peer" type="checkbox" id="text-dim" />
-							<div class="absolute inset-0 bg-gray-100 peer-checked:bg-gray-200 peer-checked:border-none border rounded-md"></div>
-							<span class="w-7 relative">Dim</span>
-							<div class="relative size-3 rounded-sm bg-white peer-checked:bg-blue-500 peer-checked:border-none border"></div>
-						</label>
-						<label class="relative flex gap-2 justify-between items-center py-1 px-2 cursor-pointer hover:scale-110 hover:-scale-x-100">
-							<input class="sr-only peer" type="checkbox" id="text-flip" />
-							<div class="absolute inset-0 bg-gray-100 peer-checked:bg-gray-200 peer-checked:border-none border rounded-md"></div>
-							<span class="w-7 relative">Flip</span>
-							<div class="relative size-3 rounded-sm bg-white peer-checked:bg-blue-500 peer-checked:border-none border"></div>
-						</label>
-						<label class="relative flex gap-2 justify-between items-center py-1 px-2 cursor-pointer hover:scale-110 hover:blur-[2px] transition-transform">
-							<input class="sr-only peer" type="checkbox" id="text-blur" />
-							<div class="absolute inset-0 bg-gray-100 peer-checked:bg-gray-200 peer-checked:border-none border rounded-md"></div>
-							<span class="w-7 relative">Blur</span>
-							<div class="relative size-3 rounded-sm bg-white peer-checked:bg-blue-500 peer-checked:border-none border"></div>
-						</label>
-						<label class="relative flex gap-2 justify-between items-center py-1 px-2 cursor-pointer hover:scale-110 transition-transform pixelate">
-							<input class="sr-only peer" type="checkbox" id="text-pixel" />
-							<div class="absolute inset-0 bg-gray-100 peer-checked:bg-gray-200 peer-checked:border-none border rounded-md"></div>
-							<span class="w-7 relative">Pixel</span>
-							<div class="relative size-3 rounded-sm bg-white peer-checked:bg-blue-500 peer-checked:border-none border"></div>
-						</label>
-					</div>
+
+		<section class="card">
+			<div class="card-head">
+				<div>
+					<h2>Obfuscation</h2>
+					<p class="hint">How obfuscated chats look. Hover a message to see it clearly.</p>
 				</div>
-				<div class="grid-cols-5 items-center grid">
-					<div class="font-semibold col-span-1 text-gray-500">Media</div>
-					<div class="flex gap-2 justify-between items-center p-1 py-2 border-gray-200 col-span-4">
-						<label class="relative flex gap-2 justify-between items-center py-1 px-2 cursor-pointer hover:scale-110 hover:opacity-50 transition-transform">
-							<input class="sr-only peer" type="checkbox" id="media-dim" />
-							<div class="absolute inset-0 bg-gray-100 peer-checked:bg-gray-200 peer-checked:border-none border rounded-md"></div>
-							<span class="w-7 relative">Dim</span>
-							<div class="relative size-3 rounded-sm bg-white peer-checked:bg-blue-500 peer-checked:border-none border"></div>
-						</label>
-						<label class="relative flex gap-2 justify-between items-center py-1 px-2 cursor-pointer hover:scale-110 hover:-scale-x-100">
-							<input class="sr-only peer" type="checkbox" id="media-flip" />
-							<div class="absolute inset-0 bg-gray-100 peer-checked:bg-gray-200 peer-checked:border-none border rounded-md"></div>
-							<span class="w-7 relative">Flip</span>
-							<div class="relative size-3 rounded-sm bg-white peer-checked:bg-blue-500 peer-checked:border-none border"></div>
-						</label>
-						<label class="relative flex gap-2 justify-between items-center py-1 px-2 cursor-pointer hover:scale-110 hover:blur-[2px] transition-transform">
-							<input class="sr-only peer" type="checkbox" id="media-blur" />
-							<div class="absolute inset-0 bg-gray-100 peer-checked:bg-gray-200 peer-checked:border-none border rounded-md"></div>
-							<span class="w-7 relative">Blur</span>
-							<div class="relative size-3 rounded-sm bg-white peer-checked:bg-blue-500 peer-checked:border-none border"></div>
-						</label>
-						<label class="relative flex gap-2 justify-between items-center py-1 px-2 cursor-pointer hover:scale-110 transition-transform pixelate">
-							<input class="sr-only peer" type="checkbox" id="media-pixel" />
-							<div class="absolute inset-0 bg-gray-100 peer-checked:bg-gray-200 peer-checked:border-none border rounded-md"></div>
-							<span class="w-7 relative">Pixel</span>
-							<div class="relative size-3 rounded-sm bg-white peer-checked:bg-blue-500 peer-checked:border-none border"></div>
-						</label>
-					</div>
+			</div>
+			<div class="method-row">
+				<span class="label">Text</span>
+				<div class="chips" data-group="text">
+					<button type="button" class="chip" data-method="opacity">Dim</button>
+					<button type="button" class="chip" data-method="flip">Flip</button>
+					<button type="button" class="chip" data-method="blur">Blur</button>
+					<button type="button" class="chip" data-method="pixelate">Pixelate</button>
 				</div>
-				<div class="grid grid-cols-2 gap-5 mt-3">
-					<div>
-						<div class="flex gap-2 mb-2 font-semibold text-gray-500">
-							<div>Blurring intensity</div>
-							<span>|</span>
-							<span id="blur-desc">05</span>
+			</div>
+			<div class="method-row">
+				<span class="label">Media</span>
+				<div class="chips" data-group="image">
+					<button type="button" class="chip" data-method="opacity">Dim</button>
+					<button type="button" class="chip" data-method="flip">Flip</button>
+					<button type="button" class="chip" data-method="blur">Blur</button>
+					<button type="button" class="chip" data-method="pixelate">Pixelate</button>
+				</div>
+			</div>
+			<div class="stack" style="margin-top: 14px">
+				<label class="slider">
+					<span class="row">Blur strength <output id="blur-desc"></output></span>
+					<input type="range" id="blur-val" min="1" max="8" step="1" />
+				</label>
+				<label class="slider">
+					<span class="row">Dim level <output id="opacity-desc"></output></span>
+					<input type="range" id="opacity-val" min="0.1" max="0.9" step="0.1" />
+				</label>
+				<div><button type="button" id="reset-obfuscate" class="text-button">Reset to defaults</button></div>
+			</div>
+		</section>
+
+		<section class="card">
+			<div class="row">
+				<div>
+					<h2>Pinned chat color</h2>
+					<p class="hint">Background of pinned chats in the chat list.</p>
+				</div>
+				<input id="pinned-color" class="swatch" type="color" aria-label="Pinned chat color" />
+			</div>
+		</section>
+
+		<section class="card">
+			<div class="row">
+				<div>
+					<h2>Password</h2>
+					<p class="hint" id="password-status">Unlocks locked chats and this popup.</p>
+				</div>
+				<button type="button" id="change-password" class="button">Set</button>
+			</div>
+			<div id="password-collapse" class="collapse">
+				<div>
+					<form id="password-form" class="stack" style="padding-top: 12px">
+						<input id="password-current" class="field" type="password" placeholder="Current password" autocomplete="current-password" maxlength="126" />
+						<input id="password-new" class="field" type="password" placeholder="New password (5 or more characters)" autocomplete="new-password" maxlength="126" />
+						<input id="password-confirm" class="field" type="password" placeholder="Repeat new password" autocomplete="new-password" maxlength="126" />
+						<div class="row">
+							<p id="password-message" class="message" role="status"></p>
+							<button class="button primary" type="submit">Save password</button>
 						</div>
-						<input type="range" id="blur-val" min="1" max="8" step="1" class="disabled:opacity-20" />
-					</div>
-					<div>
-						<div class="flex gap-2 mb-2 font-semibold text-gray-500">
-							<div>Dim / Opacity</div>
-							<span>|</span>
-							<span id="opacity-desc">0.1</span>
-						</div>
-						<input type="range" id="opacity-val" min="0.1" max="0.9" step="0.1" class="disabled:opacity-20" />
-					</div>
-				</div>
-				<div class="flex justify-end gap-2">
-					<button id="reset-obfuscate" class="inline font-semibold text-gray-500 bg-gray-200 border border-gray-200 py-0.5 px-2 mt-3 rounded-md">Reset to default</button>
-					<button id="set-obfuscate" class="inline font-semibold text-gray-500 bg-gray-200 border border-gray-200 py-0.5 px-2 mt-3 rounded-md">Set method</button>
-				</div>
-			</section>
-			<section class="mt-4 p-2 rounded-md shadow-md">
-				<h2 class="text-gray-500 text-sm font-semibold">Other settings</h2>
-				<p class="text-xs text-gray-400 mb-4">Tip: You can export / import your data</p>
-				<div class="flex flex-col">
-					<div class="flex justify-between border border-gray-200 p-2 rounded-md items-center dark:border-gray-800">
-						<span class="font-semibold text-gray-500">Change pinned chats color</span>
-						<div class="flex gap-2">
-							<input id="pinned-color" type="color" />
-							<button id="change-color" class="font-semibold text-gray-500 bg-gray-200 border border-gray-200 py-0.5 px-2 rounded-md">Set color</button>
-						</div>
-					</div>
-					<div class="flex justify-between border border-gray-200 p-2 rounded-md items-center dark:border-gray-800">
-						<span class="font-semibold text-gray-500">Create / change your password</span>
-						<button id="change-password" class="font-semibold text-gray-500 bg-gray-200 border border-gray-200 py-0.5 px-2 rounded-md">Set pass</button>
-					</div>
-					<form id="password-form" class="hc-password-form" hidden>
-						<input id="password-current" class="hc-field" type="password" placeholder="Current password" autocomplete="current-password" maxlength="126" />
-						<input id="password-new" class="hc-field" type="password" placeholder="New password (5 or more characters)" autocomplete="new-password" maxlength="126" />
-						<input id="password-confirm" class="hc-field" type="password" placeholder="Repeat new password" autocomplete="new-password" maxlength="126" />
-						<button class="font-semibold text-gray-500 bg-gray-200 border border-gray-200 py-0.5 px-2 rounded-md" type="submit">Save password</button>
-						<p id="password-message" class="hc-message" role="status"></p>
 					</form>
-					<div class="flex justify-between border border-gray-200 p-2 rounded-md items-center dark:border-gray-800">
-						<span class="font-semibold text-gray-500">Export data</span>
-						<div class="flex gap-2">
-							<button id="export-data" class="font-semibold text-gray-500 bg-gray-200 border border-gray-200 py-0.5 px-2 rounded-md">Export</button>
-						</div>
-					</div>
-					<div class="flex justify-between border border-gray-200 p-2 rounded-md items-center dark:border-gray-800">
-						<span class="font-semibold text-gray-500">Import data</span>
-						<label for="import-data" class="cursor-pointer flex gap-2 items-center text-gray-500 bg-gray-200 border border-gray-200 py-0.5 px-2 rounded-md">
-							<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#919191">
-								<path d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z" />
-							</svg>
-							<div>
-								<p class="font-semibold">Upload data</p>
-								<span class="text-gray-400">.txt file</span>
-							</div>
-							<input type="file" id="import-data" name="import-data" hidden />
-						</label>
-					</div>
-					<div class="flex justify-between border border-gray-200 p-2 rounded-md items-center dark:border-gray-800">
-						<span class="font-semibold text-gray-500">English</span>
-						<button id="change-language" class="font-semibold text-gray-500 bg-gray-200 border border-gray-200 py-0.5 px-2 rounded-md">Change Language</button>
-					</div>
 				</div>
-			</section>
-		</main>
+			</div>
+		</section>
+
+		<section class="card">
+			<h2>Backup</h2>
+			<p class="hint">Save your chats and settings to a file, or restore them from one. The password is kept only as a hash.</p>
+			<div class="row" style="justify-content: flex-start; margin-top: 10px">
+				<button type="button" id="export-data" class="button"><span data-icon="download"></span>Export</button>
+				<label for="import-data" class="button"><span data-icon="upload"></span>Import</label>
+				<input type="file" id="import-data" accept=".txt" hidden />
+			</div>
+			<div id="import-confirm" class="confirm" hidden>
+				<span>Replace everything with this file?</span>
+				<span class="row" style="gap: 6px">
+					<button type="button" id="import-cancel" class="button">Cancel</button>
+					<button type="button" id="import-replace" class="button primary">Replace</button>
+				</span>
+			</div>
+		</section>
+
+		<div id="toast" class="toast" role="status"></div>
 	</body>
 </html>

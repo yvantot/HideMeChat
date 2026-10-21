@@ -3,25 +3,31 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>HideMeChat lock</title>
-		<link rel="stylesheet" href="../css/lock.css" />
+		<title>Hide Me Chat lock</title>
+		<link rel="stylesheet" href="../css/ui.css" />
+		<script src="../js/shared/icons.js" defer></script>
 		<script src="../js/shared/password.js" defer></script>
+		<script src="../js/shared/storage.js" defer></script>
 		<script src="../js/lock/lockFrame.js" defer></script>
 	</head>
-	<body class="hc-frame">
-		<form id="unlock-form" class="hc-card" hidden>
-			<h1>This chat is locked</h1>
-			<input id="unlock-password" class="hc-field" type="password" placeholder="Password" autocomplete="current-password" maxlength="126" />
-			<button class="hc-button" type="submit">Unlock</button>
-			<p id="unlock-message" class="hc-message" role="status"></p>
-		</form>
-		<form id="create-form" class="hc-card" hidden>
-			<h1>Create a password</h1>
-			<p>This chat is locked, but no password is set yet. Choose one to unlock locked chats and HideMeChat's popup.</p>
-			<input id="create-password" class="hc-field" type="password" placeholder="Password (5 or more characters)" autocomplete="new-password" maxlength="126" />
-			<input id="create-confirm" class="hc-field" type="password" placeholder="Repeat password" autocomplete="new-password" maxlength="126" />
-			<button class="hc-button" type="submit">Save password</button>
-			<p id="create-message" class="hc-message" role="status"></p>
-		</form>
+	<body class="frame">
+		<div class="lock-card">
+			<span class="lock-badge" data-icon="lock"></span>
+			<form id="unlock-form" hidden>
+				<h1>This chat is locked</h1>
+				<p class="hint">Enter your Hide Me Chat password.</p>
+				<input id="unlock-password" class="field" type="password" placeholder="Password" autocomplete="current-password" maxlength="126" />
+				<button class="button primary" type="submit">Unlock</button>
+				<p id="unlock-message" class="message" role="status"></p>
+			</form>
+			<form id="create-form" hidden>
+				<h1>Create a password</h1>
+				<p class="hint">This chat is locked, but no password is set yet. Choose one for your locked chats and the Hide Me Chat popup.</p>
+				<input id="create-password" class="field" type="password" placeholder="Password (5 or more characters)" autocomplete="new-password" maxlength="126" />
+				<input id="create-confirm" class="field" type="password" placeholder="Repeat password" autocomplete="new-password" maxlength="126" />
+				<button class="button primary" type="submit">Save password</button>
+				<p id="create-message" class="message" role="status"></p>
+			</form>
+		</div>
 	</body>
 </html>

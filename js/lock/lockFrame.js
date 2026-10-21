@@ -14,8 +14,14 @@ const createMessage = document.getElementById("create-message");
 
 function showMessage(element, text, isError) {
 	element.textContent = text;
-	if (isError) element.classList.add("hc-error");
-	else element.classList.remove("hc-error");
+	if (isError) element.classList.add("error");
+	else element.classList.remove("error");
+}
+
+function shake(form) {
+	form.classList.remove("shake");
+	void form.offsetWidth;
+	form.classList.add("shake");
 }
 
 function show(form) {
@@ -24,18 +30,9 @@ function show(form) {
 	form.querySelector("input").focus();
 }
 
-// Reads the stored data, replacing a v2 plain-text password with its hash first.
-function getData() {
-	return new Promise((resolve) => {
-		storage.get(null, async (data) => {
-			if (await upgradeLegacyPassword(data)) await storage.set(data);
-			resolve(data);
-		});
-	});
-}
-
 async function init() {
-	const data = await getData();
+	const data = await loadData();
+	if (data.preferences.userTheme === "dark") document.documentElement.classList.add("dark");
 	show(data.preferences.password ? unlockForm : createForm);
 }
 
@@ -43,15 +40,15 @@ unlockForm.addEventListener("submit", async (event) => {
 	event.preventDefault();
 	const button = unlockForm.querySelector("button");
 	button.disabled = true;
-	showMessage(unlockMessage, "Checking…", false);
-	const data = await getData();
+	showMessage(unlockMessage, "", false);
+	const data = await loadData();
 	const correct = await verifyPassword(unlockPassword.value, data.preferences.password);
 	button.disabled = false;
 	if (correct) {
-		showMessage(unlockMessage, "", false);
 		parent.postMessage({ hidechat: "unlocked", chat }, "*");
 	} else {
 		showMessage(unlockMessage, "Wrong password.", true);
+		shake(unlockForm);
 		unlockPassword.value = "";
 		unlockPassword.focus();
 	}
@@ -61,16 +58,18 @@ createForm.addEventListener("submit", async (event) => {
 	event.preventDefault();
 	if (!isValidNewPassword(createPassword.value)) {
 		showMessage(createMessage, `Use at least ${PASSWORD_MIN_LENGTH} characters.`, true);
+		shake(createForm);
 		return;
 	}
 	if (createPassword.value !== createConfirm.value) {
 		showMessage(createMessage, "The passwords don't match.", true);
+		shake(createForm);
 		return;
 	}
 
 	const button = createForm.querySelector("button");
 	button.disabled = true;
-	const data = await getData();
+	const data = await loadData();
 	// Someone may have set a password in another tab meanwhile; never overwrite it from here.
 	if (!data.preferences.password) {
 		data.preferences.password = await hashPassword(createPassword.value);
@@ -88,4 +87,5 @@ window.addEventListener("focus", () => {
 	(unlockForm.hidden ? createPassword : unlockPassword).focus();
 });
 
+fillIcons();
 init();

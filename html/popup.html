@@ -3,71 +3,55 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Main</title>
-		<meta name="description" content="Hide Chat main" />
-		<meta name="author" content="Jun Ivanne Dalman" />
-		<link rel="stylesheet" href="../css/popup.css" />
-		<link rel="stylesheet" href="../css/lock.css" />
+		<title>Hide Me Chat</title>
+		<link rel="stylesheet" href="../css/ui.css" />
+		<script src="../js/shared/icons.js" defer></script>
 		<script src="../js/shared/password.js" defer></script>
+		<script src="../js/shared/storage.js" defer></script>
 		<script src="../js/popup/utilities.js" defer></script>
 		<script src="../js/popup/mainPopup.js" defer></script>
-		<style>@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
-</style>
 	</head>
-	<body class="w-96 h-fit min-h-52 font-Main text-gray-800 dark:text-gray-100 dark:bg-gray-900 select-none">
-		<div id="hc-gate" class="hc-gate" hidden>
-			<form id="hc-gate-form" class="hc-card">
-				<h1>HideMeChat is locked</h1>
-				<input id="hc-gate-password" class="hc-field" type="password" placeholder="Password" autocomplete="current-password" maxlength="126" />
-				<button class="hc-button" type="submit">Unlock</button>
-				<p id="hc-gate-message" class="hc-message hc-error" role="status"></p>
-			</form>
+	<body class="popup">
+		<div id="hc-gate" class="gate" hidden>
+			<div class="gate-card">
+				<span class="lock-badge" data-icon="lock"></span>
+				<h1>Hide Me Chat is locked</h1>
+				<p class="hint">Enter your password to see your chats.</p>
+				<form id="hc-gate-form">
+					<input id="hc-gate-password" class="field" type="password" placeholder="Password" autocomplete="current-password" maxlength="126" />
+					<button class="button primary" type="submit">Unlock</button>
+					<p id="hc-gate-message" class="message error" role="status"></p>
+				</form>
+			</div>
 		</div>
-		<header class="flex items-center justify-between mx-3 mt-3 mb-4">
-			<div class="flex items-center" title="Changes:&#013;&#013;* Errors and bugs fixes.&#013;* No special permissions.&#013;* Revamped user interface & added dark mode. &#013;* Chat details.&#013;* Now works with facebook.com, facebook.com/messages.&#013;* Hide chats.&#013;* Pin chats.&#013;* Lock chats.&#013;* Obfuscate chats: blur, pixelate, flip or dim.&#013;* Use @rule to obfuscate a single message.&#013;* Export/import data.&#013;* User preferences & customizations.&#013;* Backward compatible with previous version.&#013;- Localization on the way.">
-				<img class="size-10" src="../assets/hidechat_icon48.png" alt="" />
-				<div class="ml-3">
-					<div class="flex font-semibold gap-2 items-baseline">
-						<h1 class="text-lg font-bold">Hide Chat</h1>
-						<span class="text-xs font-bold">v2.0.0</span>
-						<span class="text-green-500">Free</span>
-					</div>
-					<span class="text-xs opacity-60">Make Messenger private</span>
-				</div>
+
+		<header class="topbar">
+			<img class="logo" src="../assets/hidechat_icon48.png" alt="" />
+			<div class="title">
+				<h1>Hide Me Chat</h1>
+				<p class="subtle" id="version"></p>
 			</div>
-			<div class="flex gap-3 items-center">
-				<label class="inline-flex cursor-pointer relative items-center h-fit overflow-hidden rounded-full border-2 dark:border-gray-400 border-blue-400">
-					<input type="checkbox" class="sr-only peer" id="toggle-theme" />
-					<div class="w-8 h-5 bg-blue-600 peer-checked:bg-blue-950"></div>
-					<div class="size-4 bg-yellow-400 border-2 border-yellow-200 rounded-full absolute top-0.5 left-0.5 peer-checked:translate-x-3 transition-all peer-checked:bg-gray-300 peer-checked:border-gray-200 duration-500"></div>
-					<div class="w-2 h-3 rounded-full bg-gray-100 absolute bottom-0 -right-0.5 peer-checked:-translate-x-7 transition-transform duration-1000"></div>
-					<div class="w-[0.66rem] h-2 rounded-full bg-gray-100 absolute bottom-0 right-1 peer-checked:-translate-x-4 transition-transform duration-700"></div>
-				</label>
-				<a title="Settings" href="./setting.html">
-					<img src="../assets/settings.svg" alt="" />
-				</a>
-			</div>
+			<button id="toggle-theme" class="icon-button" type="button" title="Switch theme" aria-label="Switch theme" data-icon="moon"></button>
+			<a href="./setting.html" class="icon-button" title="Settings" aria-label="Settings" data-icon="settings"></a>
 		</header>
-		<p id="page-health" class="hidden mx-3 mb-2 p-2 rounded-md text-xs font-semibold bg-yellow-400 text-gray-800"></p>
-		<main class="flex flex-col gap-4">
-			<div class="relative m-2 rounded" id="hidden-main">
-				<header class="flex items-center justify-between border-b-2 border-t-2 dark:border-gray-800 p-[0.4rem]">
-					<div class="flex text-base font-bold">
-						<h2 class="text-gray-700 dark:text-gray-400">Modified Chats</h2>
-						<span id="chatCount" class="ml-2 pl-2 text-emerald-600 border-l-2 border-gray-200 dark:border-gray-800">0</span>
-					</div>
-					<button title="Unhide all hidden chat" id="toggle-hiddenall" class="unhideChat size-6 opacity-25 hover:opacity-100 p-1 bg-gray-700 rounded">
-						<img class="size-full" src="../assets/visiblenot.svg" alt="" data-on="true" />
-					</button>
-				</header>
-				<ul class="select-none overflow-y-auto h-[450px]" id="hiddenContainer"></ul>
+
+		<p id="page-health" class="notice" role="status" hidden></p>
+
+		<main class="card">
+			<div class="card-head">
+				<h2>Your chats<span id="chatCount" class="count">0</span></h2>
+				<label class="switch" title="Show hidden chats on this page for now">
+					<input type="checkbox" id="toggle-hiddenall" disabled />
+					<span class="track"></span>
+					Show hidden
+				</label>
+			</div>
+			<ul id="hiddenContainer" class="chat-list"></ul>
+			<div id="empty-state" class="empty" hidden>
+				<span data-icon="chat"></span>
+				<p>No chats here yet.</p>
+				<p>Right-click a chat in Messenger and choose <strong>Hide Me Chat</strong> to hide, pin, obfuscate or lock it.</p>
 			</div>
 		</main>
-		<br class="mt-5" />
-		<nav class="fixed flex justify-center gap-10 select-none font-bold text-blue-600 bg-gray-200 p-1 dark:bg-gray-800 dark:text-blue-600 bottom-0 right-0 left-0">
-			<span title="Shoutout to my Mom. I wanna thank you for all that you do. Don't worry Mom, I'll win.&#013;Shoutout to my bro, Janaban, for treating me some graham balls" class="text-gray-500">Shoutout</span>
-			<a href="https://nopaste.boris.sh/#XQAAAQCdAwAAAAAAAAAkGUsiwFkDy4wMcsIEqLNPgN0/d5zPEJ0gd6nRpWqVK+IUCjwQBLzxSSAbdPnlxz2X4Z7ooTO02EMGsP01DGQoeEcIRdrosNMW6WyeGiARnbEMoV0vIrGiaU+1OZoXl++7pWgKHy6pX5vc9G29pWhW3UopRDxa9+s/Oe+7Fh40ECUo3RF93RCvY6Z/rNqhNK1l8hrrskpLvuG8mW2O2e9PTilokWW1vwFdaFF+I5Tev8HnM1iHdQ3k9six72nPae7Z2ACG3rz/wJ+v7wKHIwuiDLJt4raPnuFa2Ufoh1y41K82gl6zK0AySXAvI2nN+V2lAbV5e4j1JW+IVV41PaivODa7OTvw3fPSDYAdk55QlwlLVbBYLtwh+zs3qP8AwazHBDW/3yr9jz3/y4RpVvonYqdO0Rmkmb+g3nbrZxHiWjn5yaMcOuqlgVQz9FX1u5Ny2NE7WgnMl/DHaG7F4tccpm7eddnB1pGbLghz+NI9evZ5yIEmKRBAg1a/DN2TYsGIzcmnpQclkT5NWOBiNG9MzdzC7KERuxEVJVRvsEgmFFf5QkZmW//eJ9Aa2GqocuQ7bM8+2dL8hE1dNCzORpmmA4QtyQKQubivVz6oxnQjH9WEonQMZ3iYQs6W8pdgipIaRLccsfFz1uZwN3JAmK7mhC1OutT4s18/dp1FZJliERZhhWoUjkWiS+RyGY9B77A3kcDgpc+uv+iCqZArLNIl/5JoP2qH8b/rtgeAexw0pB4A0saZTFOqVkyBzoZu/nimyA==" title="Do you need a browser extension for anything? I'm the guy." target="_blank">Hire Me $</a>
-			<a href="https://bsky.app/profile/jivanne.bsky.social" title="It's a little empty right now... but you won't regret it, I promise!" target="_blank" class="text-gray-500">Follow me :D</a>
-		</nav>
 	</body>
 </html>

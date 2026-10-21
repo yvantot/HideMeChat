@@ -1,131 +1,189 @@
+const chatList = document.getElementById("hiddenContainer");
+const chatCounter = document.getElementById("chatCount");
+const emptyState = document.getElementById("empty-state");
+const hiddenSwitch = document.getElementById("toggle-hiddenall");
+
+// Chat links open on the site of the active tab, or messenger.com.
+let chatSiteBase = "https://www.messenger.com";
+
+const FEATURES = [
+	{ flag: "isHidden", className: "toggleHide", icon: "hide", on: "Hidden", off: "Hide" },
+	{ flag: "isPinned", className: "togglePin", icon: "pin", on: "Pinned", off: "Pin" },
+	{ flag: "isObfuscated", className: "toggleObf", icon: "blur", on: "Obfuscated", off: "Obfuscate" },
+	{ flag: "isLocked", className: "toggleLock", icon: "lock", on: "Locked", off: "Lock" },
+];
+
+function displayName(chat) {
+	// v1 only stored the chat's URL.
+	return chat.chatName.startsWith("/") ? "Unnamed chat" : chat.chatName;
+}
+
+function chatMeta(chat) {
+	const on = FEATURES.filter((feature) => chat[feature.flag]).map((feature) => feature.on);
+	return on.join(" · ");
+}
+
+function avatarHtml(chat) {
+	if (/^https:\/\//.test(chat.chatImg)) return `<img class="avatar" src="${escapeHtml(chat.chatImg)}" alt="" />`;
+	return `<span class="avatar">${escapeHtml(displayName(chat).charAt(0).toUpperCase())}</span>`;
+}
+
+// Picture URLs from Facebook expire; fall back to the chat's initial.
+function useInitialIfBroken(item, chat) {
+	const image = item.querySelector("img.avatar");
+	image?.addEventListener("error", () => {
+		image.outerHTML = `<span class="avatar">${escapeHtml(displayName(chat).charAt(0).toUpperCase())}</span>`;
+	});
+}
+
+function createItem(chat, index) {
+	const item = document.createElement("li");
+	item.setAttribute("class", "chat");
+	item.setAttribute("data-chaturl", chat.chatURL);
+	item.setAttribute("style", `--i: ${Math.min(index, 10)}`);
+	// Names, messages and picture URLs come from the page, so they're escaped before going into the HTML.
+	const url = escapeHtml(chat.chatURL);
+	item.innerHTML = `
+		${avatarHtml(chat)}
+		<div class="chat-main">
+			<a class="chat-name" target="_blank" rel="noreferrer"></a>
+			<span class="chat-meta"></span>
+		</div>
+		<div class="chat-actions">
+			${FEATURES.map(
+				(feature) =>
+					`<button type="button" class="toggle ${feature.className}" data-chaturl="${url}" data-flag="${feature.flag}">${icon(feature.icon)}</button>`
+			).join("")}
+		</div>`;
+	item.querySelectorAll(".toggle").forEach((button) => {
+		button.addEventListener("click", () => toggleFlag(chat.chatURL, button.getAttribute("data-flag")));
+	});
+	useInitialIfBroken(item, chat);
+	updateItem(item, chat);
+	return item;
+}
+
+function updateItem(item, chat) {
+	const link = item.querySelector(".chat-name");
+	link.textContent = displayName(chat);
+	link.setAttribute("href", `${chatSiteBase}${chat.chatURL}`);
+	item.querySelector(".chat-meta").textContent = chatMeta(chat);
+	item.querySelectorAll(".toggle").forEach((button) => {
+		const feature = FEATURES.find((f) => f.flag === button.getAttribute("data-flag"));
+		const on = !!chat[feature.flag];
+		button.setAttribute("aria-pressed", String(on));
+		button.setAttribute("title", on ? `${feature.on}. Click to undo` : feature.off);
+		button.setAttribute("aria-label", `${feature.off} ${displayName(chat)}`);
+	});
+}
+
+// Updates the list in place, so only new chats animate in and only removed ones animate out.
+function renderChats(data) {
+	const chats = data.messengerChats;
+	chatCounter.textContent = chats.length;
+	emptyState.hidden = chats.length > 0;
+
+	const existing = new Map([...chatList.children].map((item) => [item.getAttribute("data-chaturl"), item]));
+	const items = chats.map((chat, index) => {
+		const item = existing.get(chat.chatURL);
+		existing.delete(chat.chatURL);
+		if (item && !item.classList.contains("leaving")) {
+			updateItem(item, chat);
+			return item;
+		}
+		return createItem(chat, index);
+	});
+	items.forEach((item, index) => {
+		const current = [...chatList.children].filter((child) => !child.classList.contains("leaving"))[index];
+		if (current !== item) chatList.insertBefore(item, current ?? null);
+	});
+	existing.forEach(async (item) => {
+		if (item.classList.contains("leaving")) return;
+		await animateOut(item);
+		item.remove();
+	});
+}
+
+async function toggleFlag(chatUrl, flag) {
+	const data = await loadData();
+	const chat = data.messengerChats.find((c) => c.chatURL === chatUrl);
+	if (!chat) return;
+	chat[flag] = !chat[flag];
+	await storage.set(data);
+	if (flag === "isLocked" && chat.isLocked && !data.preferences.password) {
+		showToast("Set a password in Settings to unlock it later");
+	}
+}
+
 // Refreshes the name, picture and last message of stored chats from the chat list in the active tab.
 function updateData() {
-	chrome.runtime.sendMessage({ message: "updateChats" }, (chats) => {
-		if (!chats) return;
-		storage.get(null, (data) => {
-			const storedUrls = new Set(data.messengerChats.map((stored) => stored.chatURL));
-			chats.forEach((chat) => {
-				if (!storedUrls.has(chat.url)) return;
-				const index = data.messengerChats.findIndex((stored) => stored.chatURL === chat.url);
-				if (index === -1) return;
-				const stored = data.messengerChats[index];
-				data.messengerChats[index] = {
-					chatName: chat.name,
-					chatImg: chat.img,
-					chatURL: chat.url,
-					lastMsg: chat.lastMsg,
-					dateAdded: stored.dateAdded,
-					isHidden: stored.isHidden,
-					isLocked: stored.isLocked,
-					isPinned: stored.isPinned,
-					isObfuscated: stored.isObfuscated,
-				};
-			});
-			storage.set(data);
+	chrome.runtime.sendMessage({ message: "updateChats" }, async (chats) => {
+		if (chrome.runtime.lastError || !chats) return;
+		const data = await loadData();
+		let changed = false;
+		chats.forEach((chat) => {
+			const stored = data.messengerChats.find((c) => c.chatURL === chat.url);
+			if (!stored) return;
+			const fresh = { chatName: chat.name, chatImg: chat.img, lastMsg: chat.lastMsg };
+			for (const [key, value] of Object.entries(fresh)) {
+				if (value !== undefined && stored[key] !== value) {
+					stored[key] = value;
+					changed = true;
+				}
+			}
+		});
+		if (changed) await storage.set(data);
+	});
+}
+
+// Connects the popup to the active Messenger tab: the "Show hidden" switch, chat links on the same site, and a
+// warning when the tab can't find parts of the page Hide Me Chat needs.
+async function connectToTab() {
+	const tab = await getActiveTab();
+	if (!tab?.url || !isValidLink(tab.url)) return;
+	if (tab.url.includes("https://www.facebook.com")) chatSiteBase = "https://www.facebook.com/messages";
+
+	chrome.tabs.sendMessage(tab.id, { message: "health" }, (health) => {
+		// No answer means the content scripts aren't running in that tab yet, e.g. it was opened before install.
+		if (chrome.runtime.lastError || !health) return;
+		hiddenSwitch.disabled = false;
+		hiddenSwitch.checked = !!health.showHiddenChats;
+		if (!health.ok) showPageWarning(health.missing);
+	});
+	hiddenSwitch.addEventListener("change", () => {
+		chrome.tabs.sendMessage(tab.id, { message: "toggleHiddenAll" }, (shown) => {
+			if (!chrome.runtime.lastError) hiddenSwitch.checked = !!shown;
 		});
 	});
 }
 
-function appendHiddenChats(chats) {
-	let html = "";
-	chats.forEach((chat) => {
-		// Names, messages and picture URLs come from the page, so they're escaped before going into the HTML.
-		const url = escapeHtml(chat.chatURL);
-		html += `
-			<li
-				class="group h-[5.5rem] px-3 flex items-center bg-gray-100 even:bg-gray-50 dark:bg-gray-800 dark:even:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-400 text-gray-600 justify-between hover:bg-gray-200">
-				<header class="flex items-center">
-					<img class="size-16 rounded-md mr-3 bg-gray-600" src="${escapeHtml(chat.chatImg)}"/>
-					<div class="max-w-44 flex-col flex justify-between">
-						<a class="text-xs text-blue-600 truncate block dark:text-blue-400" href="https://www.messenger.com${url}"
-							target="_blank">
-							<div class="flex gap-2 items-center">
-								<h3 class="text-sm font-semibold truncate">${escapeHtml(chat.chatName)}</h3>
-								<span class="text-xs text-gray-400">- ${escapeHtml(chat.lastMsg)} ago</span>
-							</div>
-							<span class="text-xs text-gray-400">Days hidden: ${getDaySince(chat.dateAdded)}</span>
-						</a>
-						<div class="flex group-hover:gap-2 items-center mt-2">
-							<button data-chaturl="${url}" title="Make chat hidden" class="toggleHide -ml-2 group-hover:-ml-0 transition-transform group-hover:scale-100 size-6 scale-[0.3] opacity-40 hover:opacity-100 p-1 rounded-full
-							${chat.isHidden ? "bg-emerald-500" : "bg-rose-500"}">
-								<img class="size-full invisible group-hover:visible" src="../assets/visiblenot.svg"/>
-							</button>
-							<button data-chaturl="${url}" title="Pin chat to the top" class="togglePin transition-transform -ml-2 group-hover:-ml-0 group-hover:scale-100 size-6 scale-[0.3] opacity-40 hover:opacity-100 p-1 rounded-full
-							${chat.isPinned ? "bg-emerald-500" : "bg-rose-500"}">
-								<img class="size-full invisible group-hover:visible" src="../assets/pin-off.svg" data-on="true">
-							</button>
-							<button data-chaturl="${url}" title="Lock chat with password" class="toggleLock transition-transform -ml-2 group-hover:-ml-0 group-hover:scale-100 size-6 scale-[0.3] opacity-40 hover:opacity-100 p-1 rounded-full
-							${chat.isLocked ? "bg-emerald-500" : "bg-rose-500"}">
-								<img class="size-full invisible group-hover:visible" src="../assets/lock-off.svg" data-on="true">
-							</button>
-							<button data-chaturl="${url}" title="Blur or pixelate messages" class="toggleObf transition-transform -ml-2 group-hover:-ml-0 group-hover:scale-100 size-6 scale-[0.3] opacity-40 hover:opacity-100 p-1 rounded-full
-							${chat.isObfuscated ? "bg-emerald-500" : "bg-rose-500"}">
-								<img class="size-full invisible group-hover:visible" src="../assets/blur-off.svg" data-on="true">
-							</button>
-						</div>
-					</div>
-				</header>
-			</li>`;
-	});
-	return html;
-}
-
-function toggleHiddenAll() {
-	document.getElementById("toggle-hiddenall").addEventListener("click", () => {
-		chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-			if (isValidLink(tabs[0].url)) chrome.tabs.sendMessage(tabs[0].id, { message: "toggleHiddenAll" });
-		});
-	});
-}
-
-// Warns when the active Messenger tab can't find parts of the page that HideMeChat needs.
-function showPageHealth() {
+function showPageWarning(missingParts) {
 	const partNames = { chatList: "chat list", conversation: "open chat", messages: "messages" };
-	chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-		if (!tabs[0]?.url || !isValidLink(tabs[0].url)) return;
-		chrome.tabs.sendMessage(tabs[0].id, { message: "health" }, (health) => {
-			// No answer means the content scripts aren't running in that tab yet, e.g. it was opened before install.
-			if (chrome.runtime.lastError || !health || health.ok) return;
-			const missing = health.missing.map((part) => partNames[part] ?? part).join(", ");
-			const warning = document.getElementById("page-health");
-			warning.textContent = `HideMeChat can't find the ${missing} on this page. Messenger may have changed its layout, so some features may not work until HideMeChat is updated.`;
-			warning.classList.remove("hidden");
-		});
-	});
+	const missing = missingParts.map((part) => partNames[part] ?? part).join(", ");
+	const warning = document.getElementById("page-health");
+	warning.textContent = `Hide Me Chat can't find the ${missing} on this page. Messenger may have changed its layout, so some features may not work until Hide Me Chat is updated.`;
+	warning.hidden = false;
 }
 
-function getDaySince(date) {
-	return (new Date(getDateNow()) - new Date(date)) / 86400000;
-}
-
-function renderChats(data) {
-	chatCounter.innerText = data.messengerChats.length;
-	hiddenChatsList.innerHTML = appendHiddenChats(data.messengerChats);
-	toggleMethod("toggleHide", "isHidden");
-	toggleMethod("toggleObf", "isObfuscated");
-	toggleMethod("toggleLock", "isLocked");
-	toggleMethod("togglePin", "isPinned");
-}
-
+fillIcons();
+document.getElementById("version").textContent = `Version ${chrome.runtime.getManifest().version}`;
 themeToggle();
 
 // Nothing about the chats is shown or wired up until the popup is unlocked.
-requireUnlock(() => {
-	toggleHiddenAll();
-	showPageHealth();
+requireUnlock(async () => {
+	await connectToTab();
+	renderChats(await loadData());
 	updateData();
-	storage.get(null, renderChats);
 
-	storage.onChanged.addListener(() => {
-		storage.get(null, (data) => {
-			// Forget chats that have no feature turned on any more. Saving triggers this listener again, so only
-			// save when something was removed.
-			const kept = data.messengerChats.filter((chat) => chat.isHidden || chat.isPinned || chat.isLocked || chat.isObfuscated);
-			if (kept.length !== data.messengerChats.length) {
-				data.messengerChats = kept;
-				storage.set(data);
-			}
-			renderChats(data);
-		});
+	storage.onChanged.addListener(async () => {
+		const data = await loadData();
+		// Forget chats that have no feature turned on any more. Saving triggers this listener again, so only
+		// save when something was removed.
+		const kept = data.messengerChats.filter((chat) => chat.isHidden || chat.isPinned || chat.isLocked || chat.isObfuscated);
+		if (kept.length !== data.messengerChats.length) {
+			data.messengerChats = kept;
+			await storage.set(data);
+		}
+		renderChats(data);
 	});
 });

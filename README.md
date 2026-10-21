@@ -1,55 +1,76 @@
-Hide Me Chat, previously Hide Chat, is a browser extension that keeps your Messenger chats away from people looking at your screen or briefly using your computer. It can hide, pin, obfuscate or lock chats with a password.
+# Hide Me Chat
 
-This browser extension works for Facebook and Messenger.
+Hide Me Chat, previously Hide Chat, is a browser extension that keeps your Messenger chats away from people looking at your screen or briefly using your computer. It can hide, pin, obfuscate or lock chats with a password, on facebook.com (Messages and chat pop-ups) and messenger.com.
 
-How to use:
-1. Right-click a chat from the chat list.
-2. Hover Hide Chat to see privacy features and click the desired action.
+## How to use
 
-Features: <br/>
-🔒 Hide Chats
-Quickly conceal specific chats with just a tap. Perfect for when you share your device, want to keep conversations discreet.
+1. Right-click a chat in the chat list.
+2. Choose **Hide Me Chat**, then what to do with it.
+3. Click the extension's icon to see your chats, switch features on or off, or briefly show hidden chats on the page. Settings are behind the sliders icon.
 
-🤐 Obfuscate Messages
-Blur, pixelate, flip or dim messages and chat lists. Stay protected from prying eyes, even in public or shared spaces.
+## Features
 
-📌 Pin Important Chats
-Prioritize your conversations by pinning them for easy access while keeping others hidden.
+🙈 **Hide chats**: remove chats from the chat list. "Hide all other chats" keeps only the one you right-clicked.
 
-🔐 Lock Chats
-Cover a chat with a password screen. Its messages, its preview in the chat list and its Facebook pop-up stay hidden until you enter the password. The extension's popup and settings ask for the same password. The password is saved as a salted hash, never as text, and the lock form runs in the extension's own frame, so Messenger's page can't read what you type.
+📌 **Pin chats**: keep chats at the top of the list, in a color you choose.
 
-📐 Obfuscate Messages with Smart At-Rules
-Subtly obfuscate specific parts of your conversations without drawing attention. Simply add these rules within your messages to customize how they appear:
+🫥 **Obfuscate chats**: blur, pixelate, flip or dim a chat's messages, its preview in the chat list and its Facebook pop-up. Hover a message to read it.
 
-@pxl - Pixelates the message for a distorted effect.
-@blr - Blurs the message for extra discretion.
-@flp - Flips the message for a creative obfuscation.
-@dim - Dims the message for subtle concealment.
+🔐 **Lock chats**: cover a chat with a password screen. Its messages, its preview in the chat list and its Facebook pop-up stay hidden until you enter the password. The extension's popup and settings ask for the same password. The password is saved as a salted hash, never as text, and the lock form runs in the extension's own frame, so Messenger's page can't read what you type.
 
-These at-rules ensure your message remains obfuscated even for other users with Hide Me Chat installed.
+📐 **Obfuscate single messages**: put one of these in a message and it shows obfuscated for anyone who has Hide Me Chat:
 
-🎨 Customizable Obfuscation
-Choose how strong your messages are obfuscated. Personalize your privacy to match your preferences.
+- `@pxl` pixelates it
+- `@blr` blurs it
+- `@flp` flips it
+- `@dim` dims it
 
-What it can and can't protect:
-* It stops people from reading your chats over your shoulder or while briefly using your computer. Everything happens on your screen only: your chats aren't changed, and other people see them as usual.
-* It doesn't stop someone who has your unlocked computer for a while and knows their way around a browser. They can use the browser's developer tools, turn the extension off, or open Messenger on another browser or device.
-* Facebook and Messenger still have all your messages. Hide Me Chat doesn't encrypt anything.
-* Locked and obfuscated chats are matched to Facebook pop-ups by the chat's name. If you rename a chat, open the extension's popup once while Messenger is open so it picks up the new name.
+🎨 **Customizable**: choose how text and media are obfuscated, how strong the blur and dim are, and the pinned color. Light and dark themes.
 
-v2.0.0 changes:
-* Errors and bugs fixes.
-* Now works with facebook.com, facebook.com/messages.
-* No special permissions.
-* Revamped user interface & added dark mode. 
-* Latest modified chats detail in UI.
-* Hide chats.
-* Pin chats to the top.
-* Lock chats with password.
-* Obfuscate messages: blur, pixelate, flip or dim.
-* Use @rule to obfuscate a single message.
-* Export/import data.
-* User preferences & customizations.
-* Backward compatible with previous version.
-* Total extension size: 43kb
+💾 **Backup**: export your chats and settings to a file and import them again, from any version of Hide Me Chat.
+
+## What it can and can't protect
+
+- It stops people from reading your chats over your shoulder or while briefly using your computer. Everything happens on your screen only: your chats aren't changed, and other people see them as usual.
+- It doesn't stop someone who has your unlocked computer for a while and knows their way around a browser. They can use the browser's developer tools, turn the extension off, or open Messenger on another browser or device.
+- Facebook and Messenger still have all your messages. Hide Me Chat doesn't encrypt anything.
+- Locked and obfuscated chats are matched to Facebook pop-ups by the chat's name. If you rename a chat, open the extension's popup once while Messenger is open so it picks up the new name.
+
+## What's new in 3.0.0
+
+- Works with today's facebook.com and messenger.com again, including encrypted chats.
+- The right-click menu works again.
+- Finds the page's parts by their structure rather than Facebook's ever-changing class names, and the popup warns you if Messenger's layout changes in a way it can't follow.
+- Reacts to page changes instead of checking the page several times a second.
+- Pinned chats move to the top without fighting Messenger; Facebook pop-ups follow each chat's own settings.
+- An honest lock: hashed password, a lock form the page can't read, a locked popup, hidden previews and pop-ups, and no more stuck password prompts.
+- A calmer, rounded popup and settings page with light and dark themes and gentle animations. No more remote fonts.
+- Exports work with names in any language, and imports accept backups from v1 and v2.
+- Many smaller fixes; see `docs/findings-2026-10.md`.
+
+## Development
+
+There's no build step: load the folder with **Load unpacked** in `chrome://extensions`.
+
+- **Tests:** `node tests/run.js` (Node 20 or newer, no dependencies). They run the real scripts against a small fake DOM and Chrome API, including sanitized captures of the live pages in `tests/fixtures/`.
+- **New page captures:** when Messenger changes its layout, paste `tests/tools/snapshot.js` into the DevTools console on the page. It copies a sanitized capture: no names, messages or ids.
+- **Releasing:** see `docs/release-checklist.md`.
+
+<details>
+<summary>v2.0.0 changes</summary>
+
+- Errors and bugs fixes.
+- Now works with facebook.com, facebook.com/messages.
+- No special permissions.
+- Revamped user interface & added dark mode.
+- Latest modified chats detail in UI.
+- Hide chats.
+- Pin chats to the top.
+- Lock chats with password.
+- Obfuscate messages: blur, pixelate, flip or dim.
+- Use @rule to obfuscate a single message.
+- Export/import data.
+- User preferences & customizations.
+- Backward compatible with previous version.
+
+</details>

@@ -1,0 +1,640 @@
+/* Hide Me Chat's own pages: the popup, settings and the lock screen frame. */
+:root {
+	--bg: #f3f4f8;
+	--surface: #ffffff;
+	--surface-2: #f0f1f6;
+	--text: #1d2130;
+	--muted: #6b7183;
+	--border: #e4e6ee;
+	--accent: #5b67e8;
+	--accent-soft: #e9ebff;
+	--accent-strong: #3f4bc9;
+	--danger: #d9485f;
+	--success: #2f9e6e;
+	--notice-bg: #fff3d6;
+	--notice-text: #7a5600;
+	--shadow: 0 1px 2px rgba(22, 26, 45, 0.05), 0 6px 18px rgba(22, 26, 45, 0.07);
+	--radius: 16px;
+	--radius-sm: 11px;
+	--ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	color-scheme: light;
+}
+.dark {
+	--bg: #13151b;
+	--surface: #1c1f28;
+	--surface-2: #252935;
+	--text: #e9ebf2;
+	--muted: #9ba1b1;
+	--border: #2b2f3b;
+	--accent: #8f98ff;
+	--accent-soft: #2a2f55;
+	--accent-strong: #c4c9ff;
+	--danger: #ff8597;
+	--success: #6fd3a5;
+	--notice-bg: #3a3119;
+	--notice-text: #f4d58a;
+	--shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.25);
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	transition: background-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+/* The popup sizes to its content; the minimum height leaves room for the password gate. */
+body.popup {
+	width: 360px;
+	min-height: 360px;
+	padding: 12px;
+}
+h1,
+h2,
+p {
+	margin: 0;
+}
+h1 {
+	font-size: 16px;
+	font-weight: 650;
+}
+h2 {
+	font-size: 14px;
+	font-weight: 600;
+}
+.hint,
+.subtle {
+	color: var(--muted);
+	font-size: 12.5px;
+}
+a {
+	color: inherit;
+}
+svg.icon {
+	width: 18px;
+	height: 18px;
+	flex: none;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.8;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+[hidden] {
+	display: none !important;
+}
+
+/* ---------- layout ---------- */
+.topbar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 2px 2px 12px;
+}
+.topbar .logo {
+	width: 32px;
+	height: 32px;
+	border-radius: 10px;
+}
+.topbar .title {
+	flex: 1;
+	min-width: 0;
+}
+.card {
+	background: var(--surface);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+	padding: 14px;
+	animation: rise 0.35s var(--ease) both;
+}
+.card + .card {
+	margin-top: 10px;
+}
+.card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+.row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.stack {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+/* ---------- controls ---------- */
+.icon-button {
+	display: inline-grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+	text-decoration: none;
+	transition: background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.15s var(--ease);
+}
+.icon-button:hover {
+	background: var(--surface-2);
+	color: var(--text);
+}
+.icon-button:active,
+.button:active,
+.chip:active,
+.toggle:active {
+	transform: scale(0.94);
+}
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 8px 14px;
+	border: none;
+	border-radius: 999px;
+	background: var(--surface-2);
+	color: var(--text);
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.2s var(--ease), transform 0.15s var(--ease), opacity 0.2s;
+}
+.button:hover {
+	background: var(--border);
+}
+.button.primary {
+	background: var(--accent);
+	color: #fff;
+}
+.dark .button.primary {
+	color: #14162a;
+}
+.button.primary:hover {
+	background: var(--accent-strong);
+}
+.dark .button.primary:hover {
+	color: #14162a;
+}
+.button:disabled {
+	opacity: 0.55;
+	cursor: progress;
+}
+.text-button {
+	padding: 4px 2px;
+	border: none;
+	background: none;
+	color: var(--accent);
+	font: inherit;
+	font-size: 12.5px;
+	font-weight: 600;
+	cursor: pointer;
+}
+.field {
+	width: 100%;
+	padding: 9px 12px;
+	border: 1.5px solid var(--border);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
+	color: var(--text);
+	font: inherit;
+	transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+.field:focus {
+	outline: none;
+	border-color: var(--accent);
+	background: var(--surface);
+	box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.message {
+	min-height: 1.2em;
+	font-size: 12.5px;
+	color: var(--success);
+}
+.message.error {
+	color: var(--danger);
+}
+
+/* Switch: <label class="switch"><input type="checkbox"><span class="track"></span>Text</label> */
+.switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--muted);
+	font-size: 12.5px;
+	cursor: pointer;
+	user-select: none;
+}
+.switch input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+.switch .track {
+	position: relative;
+	width: 34px;
+	height: 20px;
+	border-radius: 999px;
+	background: var(--border);
+	transition: background-color 0.25s var(--ease);
+}
+.switch .track::after {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	transition: transform 0.25s var(--ease);
+}
+.switch input:checked + .track {
+	background: var(--accent);
+}
+.switch input:checked + .track::after {
+	transform: translateX(14px);
+}
+.switch input:focus-visible + .track {
+	box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.switch input:disabled + .track {
+	opacity: 0.45;
+}
+.switch:has(input:disabled) {
+	cursor: default;
+}
+
+/* Chips: toggle buttons with aria-pressed */
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.chip {
+	padding: 6px 12px;
+	border: 1.5px solid var(--border);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--muted);
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease),
+		transform 0.15s var(--ease);
+}
+.chip[aria-pressed="true"] {
+	border-color: transparent;
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+}
+
+.slider {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 13px;
+}
+.slider .row output {
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
+}
+input[type="range"] {
+	width: 100%;
+	height: 20px;
+	margin: 0;
+	background: transparent;
+	accent-color: var(--accent);
+	cursor: pointer;
+}
+input[type="color"].swatch {
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	border: 1.5px solid var(--border);
+	border-radius: 50%;
+	background: none;
+	cursor: pointer;
+	overflow: hidden;
+}
+input[type="color"].swatch::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+input[type="color"].swatch::-webkit-color-swatch {
+	border: none;
+	border-radius: 50%;
+}
+
+/* Collapsible area that opens smoothly: <div class="collapse"><div>…</div></div> */
+/* Closed, it's also hidden from the keyboard (visibility switches after the close animation). */
+.collapse {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	visibility: hidden;
+	transition: grid-template-rows 0.3s var(--ease), opacity 0.25s var(--ease), visibility 0s linear 0.3s;
+}
+.collapse > * {
+	overflow: hidden;
+}
+.collapse.open {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	visibility: visible;
+	transition-delay: 0s;
+}
+
+/* ---------- popup: chat list ---------- */
+.notice {
+	margin-bottom: 10px;
+	padding: 10px 12px;
+	border-radius: var(--radius-sm);
+	background: var(--notice-bg);
+	color: var(--notice-text);
+	font-size: 12.5px;
+	animation: rise 0.3s var(--ease) both;
+}
+.count {
+	display: inline-block;
+	min-width: 22px;
+	margin-left: 6px;
+	padding: 1px 7px;
+	border-radius: 999px;
+	background: var(--surface-2);
+	color: var(--muted);
+	font-size: 12px;
+	text-align: center;
+}
+.chat-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-height: 380px;
+	margin: 0 -6px;
+	padding: 0 6px;
+	overflow-y: auto;
+	list-style: none;
+}
+.chat {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px;
+	border-radius: var(--radius-sm);
+	transition: background-color 0.2s var(--ease), opacity 0.25s var(--ease), transform 0.25s var(--ease);
+	animation: rise 0.3s var(--ease) both;
+	animation-delay: calc(var(--i, 0) * 30ms);
+}
+.chat:hover {
+	background: var(--surface-2);
+}
+.chat.leaving {
+	opacity: 0;
+	transform: translateX(12px);
+}
+.avatar {
+	display: grid;
+	place-items: center;
+	width: 38px;
+	height: 38px;
+	flex: none;
+	border-radius: 50%;
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+	font-weight: 700;
+	object-fit: cover;
+}
+.chat-main {
+	flex: 1;
+	min-width: 0;
+}
+.chat-name {
+	display: block;
+	overflow: hidden;
+	font-weight: 600;
+	text-decoration: none;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.chat-name:hover {
+	color: var(--accent);
+}
+.chat-meta {
+	display: block;
+	overflow: hidden;
+	color: var(--muted);
+	font-size: 12px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.chat-actions {
+	display: flex;
+	gap: 2px;
+}
+.toggle {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--muted);
+	opacity: 0.7;
+	cursor: pointer;
+	transition: background-color 0.2s var(--ease), color 0.2s var(--ease), opacity 0.2s var(--ease),
+		transform 0.15s var(--ease);
+}
+.toggle svg.icon {
+	width: 16px;
+	height: 16px;
+}
+.toggle:hover {
+	opacity: 1;
+	background: var(--border);
+}
+.toggle[aria-pressed="true"] {
+	opacity: 1;
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+}
+.empty {
+	padding: 22px 12px;
+	color: var(--muted);
+	font-size: 13px;
+	text-align: center;
+	animation: rise 0.3s var(--ease) both;
+}
+.empty svg.icon {
+	width: 30px;
+	height: 30px;
+	margin-bottom: 6px;
+	color: var(--accent);
+}
+
+/* ---------- password gate (popup and settings) ---------- */
+.gate {
+	position: fixed;
+	inset: 0;
+	z-index: 10;
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	background: var(--bg);
+	transition: opacity 0.25s var(--ease);
+}
+.gate.leaving {
+	opacity: 0;
+	pointer-events: none;
+}
+.gate-card,
+.lock-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	max-width: 300px;
+	padding: 22px 20px 16px;
+	border-radius: 20px;
+	background: var(--surface);
+	box-shadow: var(--shadow);
+	text-align: center;
+	animation: pop 0.35s var(--ease) both;
+}
+.lock-badge {
+	display: grid;
+	place-items: center;
+	width: 46px;
+	height: 46px;
+	border-radius: 50%;
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+}
+.lock-badge svg.icon {
+	width: 22px;
+	height: 22px;
+}
+.gate-card form,
+.lock-card form {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	margin-top: 4px;
+}
+.shake {
+	animation: shake 0.35s var(--ease);
+}
+
+/* ---------- lock screen frame (lock.html) ---------- */
+/* A frame whose color-scheme differs from the page's gets an opaque backdrop, so it keeps "normal" and draws
+   its own dark colors. */
+:root:has(body.frame) {
+	color-scheme: normal;
+}
+body.frame {
+	display: grid;
+	place-items: center;
+	min-height: 100vh;
+	padding: 12px;
+	overflow: hidden;
+	background: transparent;
+}
+
+/* ---------- settings ---------- */
+.method-row {
+	display: grid;
+	grid-template-columns: 52px 1fr;
+	align-items: center;
+	gap: 8px;
+}
+.method-row + .method-row {
+	margin-top: 8px;
+}
+.label {
+	color: var(--muted);
+	font-size: 12.5px;
+	font-weight: 600;
+}
+.confirm {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-top: 10px;
+	padding: 10px 12px;
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
+	font-size: 13px;
+	animation: rise 0.25s var(--ease) both;
+}
+.toast {
+	position: fixed;
+	left: 50%;
+	bottom: 14px;
+	z-index: 20;
+	padding: 8px 14px;
+	border-radius: 999px;
+	background: var(--text);
+	color: var(--bg);
+	font-size: 12.5px;
+	font-weight: 600;
+	opacity: 0;
+	pointer-events: none;
+	transform: translate(-50%, 10px);
+	transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.toast.show {
+	opacity: 1;
+	transform: translate(-50%, 0);
+}
+
+/* ---------- animations ---------- */
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+@keyframes pop {
+	from {
+		opacity: 0;
+		transform: scale(0.96) translateY(4px);
+	}
+}
+@keyframes shake {
+	25% {
+		transform: translateX(-5px);
+	}
+	50% {
+		transform: translateX(4px);
+	}
+	75% {
+		transform: translateX(-2px);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-delay: 0ms !important;
+		transition-duration: 0.01ms !important;
+	}
+}
