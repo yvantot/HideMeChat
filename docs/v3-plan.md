@@ -1,0 +1,57 @@
+# HideMeChat v3: plan
+
+Goal: HideMeChat works the same on **facebook.com/messages**, **messenger.com** and **facebook.com chat pop-ups**, survives Meta's class renames, and is honest about what its lock protects. The evidence behind each step is in `findings-2026-10.md`.
+
+## 1. Get readable source back
+
+- If the original v2 source still exists somewhere, start from it. If not, unminify the current files into readable modules and keep their behaviour exactly the same at first.
+- Stay with plain JS and no build step, to keep the extension small and simple to load unpacked.
+
+## 2. One place that understands the page
+
+- Make one "where am I" layer that decides which page it's on from the URL: Messages on facebook.com, messenger.com, or a normal Facebook page that may have pop-ups or the Messenger dropdown open.
+- Each feature asks this layer for the chat list, the current chat, its message list or the conversation area, and never queries the page directly.
+- Find elements by ARIA roles and `data-*` attributes first (`grid`, `row`, `log`, `main`, `messages_table`). Keep Meta's class names only as a fallback.
+- Add a health check: when the anchors can't be found, the popup says "Messenger changed its layout, some features may not work" instead of failing silently.
+
+## 3. React to changes instead of polling
+
+- Replace the many intervals with one observer on the page and one way of detecting URL changes. Each update re-applies the current state from scratch.
+- Never keep an element between updates. Look it up fresh each time, because Messenger replaces the conversation area when you switch chats.
+- Move as much as possible into CSS: set the current chat's state as an attribute on `<html>` and let stylesheet rules do the hiding and obfuscating. Fewer moving parts means fewer timing bugs.
+- Do nothing on Facebook pages that don't have chats on screen.
+
+## 4. Fix the confirmed bugs
+
+- Pop-up chats follow each chat's own obfuscate setting. A pop-up is identified by the chat link in its header.
+- Pin works through the observer, and on the Facebook home page only inside the dropdown.
+- Read the "last message" time from the new timestamp span.
+- Clean up the popup bugs: the skipped entries, the stuck password prompt, the export URL and the `innerHTML` injection.
+
+## 5. Make the lock honest
+
+- Store a salted hash of the password, never the password itself. Never show it back. Leave it out of exports, or encrypt the export.
+- Replace `prompt`/`alert` with proper in-page and popup forms.
+- Lock the popup itself, so nobody can just untick features there.
+- A locked chat also hides its preview in the chat list and its pop-up.
+- Reword the README: the lock protects against people looking at your screen or using your computer for a moment, not against someone who opens DevTools.
+
+## 6. Data and migration
+
+- Add a schema version to storage, and migrate v2 data and the old v1 `hidden_chat` format the same way `initStorage` does now.
+- Keep the shared `/t/<id>/` key so a chat set up on one site applies on the other. Treat `e2ee` chats as their own key, as now.
+
+## 7. Testing
+
+- Keep a few cleaned HTML snapshots of each page (with names and messages removed) to check the anchor layer against without logging in.
+- Keep a short manual checklist covering 3 pages × regular/E2EE chats × each feature, run before every release.
+- Turn the health check from step 2 into something that can be run from the console.
+
+## 8. Release
+
+- Version 3.0.0. Update the README and store listing, and note what changed with the lock.
+- Optional later: a Firefox build, since it supports Manifest V3 too.
+
+## Order
+
+Steps 1 and 2 come first, because everything else builds on them. Steps 3 and 4 go together, since most of the bugs disappear with the observer rewrite. Step 5 is independent and can happen any time after step 1. Steps 6–8 come last.

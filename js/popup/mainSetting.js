@@ -1,1 +1,110 @@
-const txtBlurChk=document.getElementById("text-blur"),txtFlipChk=document.getElementById("text-flip"),txtPixelChk=document.getElementById("text-pixel"),txtDimChk=document.getElementById("text-dim"),mdaBlurChk=document.getElementById("media-blur"),mdaFlipChk=document.getElementById("media-flip"),mdaPixelChk=document.getElementById("media-pixel"),mdaDimChk=document.getElementById("media-dim"),blurRange=document.getElementById("blur-val"),opacityRange=document.getElementById("opacity-val"),blurDesc=document.getElementById("blur-desc"),opacityDesc=document.getElementById("opacity-desc"),pinnedColor=document.getElementById("pinned-color"),setColor=document.getElementById("change-color"),setObfuscate=document.getElementById("set-obfuscate"),resetObfuscate=document.getElementById("reset-obfuscate"),changePassword=document.getElementById("change-password"),changeLanguage=document.getElementById("change-language"),exportData=document.getElementById("export-data"),importData=document.getElementById("import-data");function initObfData(e){e.preferences.obfMethod.text.forEach((e=>{switch(e){case"blur":txtBlurChk.checked=!0;break;case"flip":txtFlipChk.checked=!0;break;case"pixelate":txtPixelChk.checked=!0;break;case"opacity":txtDimChk.checked=!0;break;default:break}})),e.preferences.obfMethod.image.forEach((e=>{switch(e){case"blur":mdaBlurChk.checked=!0;break;case"flip":mdaFlipChk.checked=!0;break;case"pixelate":mdaPixelChk.checked=!0;break;case"opacity":mdaDimChk.checked=!0;break;default:break}})),blurDesc.textContent=String(e.preferences.obfMethod.blurIntensity).padStart(2,"0"),opacityDesc.textContent=String(e.preferences.obfMethod.brightnessIntensity).padStart(2,"0"),blurRange.value=e.preferences.obfMethod.blurIntensity,opacityRange.value=e.preferences.obfMethod.brightnessIntensity,pinnedColor.value=e.preferences.pinnedColor}storage.get(null,(e=>{themeToggle(),initObfData(e),setObfuscate.addEventListener("click",(()=>{const t=[],a=[];txtBlurChk.checked&&t.push("blur"),txtFlipChk.checked&&t.push("flip"),txtPixelChk.checked&&t.push("pixelate"),txtDimChk.checked&&t.push("opacity"),mdaBlurChk.checked&&a.push("blur"),mdaFlipChk.checked&&a.push("flip"),mdaPixelChk.checked&&a.push("pixelate"),mdaDimChk.checked&&a.push("opacity"),e.preferences.obfMethod.text=t,e.preferences.obfMethod.image=a,e.preferences.obfMethod.blurIntensity=blurRange.value,e.preferences.obfMethod.brightnessIntensity=opacityRange.value,storage.set(e)})),resetObfuscate.addEventListener("click",(()=>{txtBlurChk.checked=!1,txtFlipChk.checked=!0,txtPixelChk.checked=!1,txtDimChk.checked=!0,mdaBlurChk.checked=!0,mdaFlipChk.checked=!1,mdaPixelChk.checked=!0,mdaDimChk.checked=!1,blurRange.value=5,opacityRange.value=.3,blurDesc.textContent=blurRange.value.padStart(2,"0"),opacityDesc.textContent=opacityRange.value.padStart(2,"0")})),blurRange.addEventListener("change",(()=>{blurDesc.textContent=blurRange.value.padStart(2,"0")})),opacityRange.addEventListener("change",(()=>{opacityDesc.textContent=opacityRange.value.padStart(2,"0")})),changePassword.addEventListener("click",(()=>{setPassword(e)})),changeLanguage.addEventListener("click",(()=>{alert("I can only support English for now, but any help in translating is welcome. Please contact me at: dalmanjunivanne@gmail.com")})),exportData.addEventListener("click",(()=>{exportDataToJson()})),importData.addEventListener("change",(e=>{const t=e.target.files[0];t&&importDataToStorage(t)})),setColor.addEventListener("click",(()=>{e.preferences.pinnedColor=pinnedColor.value,storage.set(e)}))})),chrome.storage.onChanged.addListener((()=>{storage.get(null,(e=>{initObfData(e)}))}));
+const txtBlurChk = document.getElementById("text-blur");
+const txtFlipChk = document.getElementById("text-flip");
+const txtPixelChk = document.getElementById("text-pixel");
+const txtDimChk = document.getElementById("text-dim");
+const mdaBlurChk = document.getElementById("media-blur");
+const mdaFlipChk = document.getElementById("media-flip");
+const mdaPixelChk = document.getElementById("media-pixel");
+const mdaDimChk = document.getElementById("media-dim");
+const blurRange = document.getElementById("blur-val");
+const opacityRange = document.getElementById("opacity-val");
+const blurDesc = document.getElementById("blur-desc");
+const opacityDesc = document.getElementById("opacity-desc");
+const pinnedColor = document.getElementById("pinned-color");
+const setColor = document.getElementById("change-color");
+const setObfuscate = document.getElementById("set-obfuscate");
+const resetObfuscate = document.getElementById("reset-obfuscate");
+const changePassword = document.getElementById("change-password");
+const changeLanguage = document.getElementById("change-language");
+const exportData = document.getElementById("export-data");
+const importData = document.getElementById("import-data");
+
+// Checkbox for each obfuscation method, in the order the methods are saved.
+const textCheckboxes = { blur: txtBlurChk, flip: txtFlipChk, pixelate: txtPixelChk, opacity: txtDimChk };
+const mediaCheckboxes = { blur: mdaBlurChk, flip: mdaFlipChk, pixelate: mdaPixelChk, opacity: mdaDimChk };
+
+function checkMethods(methods, checkboxes) {
+	methods.forEach((method) => {
+		if (Object.hasOwn(checkboxes, method)) checkboxes[method].checked = true;
+	});
+}
+
+function getCheckedMethods(checkboxes) {
+	return Object.keys(checkboxes).filter((method) => checkboxes[method].checked);
+}
+
+function initObfData(data) {
+	const { obfMethod } = data.preferences;
+	checkMethods(obfMethod.text, textCheckboxes);
+	checkMethods(obfMethod.image, mediaCheckboxes);
+	blurDesc.textContent = String(obfMethod.blurIntensity).padStart(2, "0");
+	opacityDesc.textContent = String(obfMethod.brightnessIntensity).padStart(2, "0");
+	blurRange.value = obfMethod.blurIntensity;
+	opacityRange.value = obfMethod.brightnessIntensity;
+	pinnedColor.value = data.preferences.pinnedColor;
+}
+
+// v2 bug, kept for now: the handlers below save the data read when the page opened, so they can overwrite
+// changes made elsewhere since then.
+storage.get(null, (data) => {
+	themeToggle();
+	initObfData(data);
+
+	setObfuscate.addEventListener("click", () => {
+		data.preferences.obfMethod.text = getCheckedMethods(textCheckboxes);
+		data.preferences.obfMethod.image = getCheckedMethods(mediaCheckboxes);
+		data.preferences.obfMethod.blurIntensity = blurRange.value;
+		data.preferences.obfMethod.brightnessIntensity = opacityRange.value;
+		storage.set(data);
+	});
+
+	resetObfuscate.addEventListener("click", () => {
+		txtBlurChk.checked = false;
+		txtFlipChk.checked = true;
+		txtPixelChk.checked = false;
+		txtDimChk.checked = true;
+		mdaBlurChk.checked = true;
+		mdaFlipChk.checked = false;
+		mdaPixelChk.checked = true;
+		mdaDimChk.checked = false;
+		blurRange.value = 5;
+		opacityRange.value = 0.3;
+		blurDesc.textContent = blurRange.value.padStart(2, "0");
+		opacityDesc.textContent = opacityRange.value.padStart(2, "0");
+	});
+
+	blurRange.addEventListener("change", () => {
+		blurDesc.textContent = blurRange.value.padStart(2, "0");
+	});
+	opacityRange.addEventListener("change", () => {
+		opacityDesc.textContent = opacityRange.value.padStart(2, "0");
+	});
+
+	changePassword.addEventListener("click", () => {
+		setPassword(data);
+	});
+	changeLanguage.addEventListener("click", () => {
+		alert(
+			"I can only support English for now, but any help in translating is welcome. Please contact me at: dalmanjunivanne@gmail.com"
+		);
+	});
+
+	exportData.addEventListener("click", () => {
+		exportDataToJson();
+	});
+	importData.addEventListener("change", (event) => {
+		const file = event.target.files[0];
+		if (file) importDataToStorage(file);
+	});
+
+	setColor.addEventListener("click", () => {
+		data.preferences.pinnedColor = pinnedColor.value;
+		storage.set(data);
+	});
+});
+
+chrome.storage.onChanged.addListener(() => {
+	storage.get(null, (data) => {
+		initObfData(data);
+	});
+});

@@ -1,1 +1,176 @@
-let obfObserver,obfInterval,obfTimeout,obfIntervalChatLeft;function makeObfInject(t){const e=new Set(t.filter((t=>t.isObfuscated)).map((t=>t.chatURL)));function r(){if(obfIntervalChatLeft&&clearInterval(obfIntervalChatLeft),obfIntervalChatLeft=setInterval((()=>{const t=document.querySelector(SELECTORS.CHATCONTAINER);if(t){const r=t?.children;for(let t=0;t<r.length;t++){const o=r[t].querySelector(SELECTORS.CHATLINK);if(o){const t=getChatId(o.href);e.has(t)&&o.querySelectorAll(`${SELECTORS.DIVIMG}, ${SELECTORS.TEXTSPAN}`).forEach((t=>{"IMG"===(t=t.closest("div")).tagName&&t?.setAttribute("data-obfmedia","true"),t?.setAttribute("data-obftext","true")}))}}}}),1e3),isMessenger){let t=document.querySelector(SELECTORS.MESSAGECONTAINER);obfInterval&&clearInterval(obfInterval),obfTimeout&&clearTimeout(obfTimeout),obfInterval=setInterval((()=>{t||(t=document.querySelector(SELECTORS.MESSAGECONTAINER)),t&&(obfRuleModifyAttr(),e.has(getCurrentChat())?injectMessagesAttr("true",t):injectMessagesAttr("false",t))}),500),obfTimeout=setTimeout((()=>{obfInterval&&clearInterval(obfInterval),onMessageChange((()=>{obfRuleModifyAttr(),e.has(getCurrentChat())?injectMessagesAttr("true",t):injectMessagesAttr("false",t)}))}),1e4)}else{let t=document.querySelectorAll(SELECTORS.MESSAGECONTAINER);obfInterval&&clearInterval(obfInterval),obfTimeout&&clearTimeout(obfTimeout),obfInterval=setInterval((()=>{t=document.querySelectorAll(SELECTORS.MESSAGECONTAINER),obfRuleModifyAttr();for(let e=0;e<t.length;e++)injectMessagesAttr("true",t[e])}),1e3)}}whenAvail((()=>document.querySelector(SELECTORS.MESSAGECONTAINER)),(()=>r()))}function injectMessagesAttr(t,e){if(!e)return;e.querySelectorAll(`\n\t\t\t${SELECTORS.MESSAGEROW} ${SELECTORS.TEXT},\n\t\t\t${SELECTORS.MESSAGEROW} ${SELECTORS.STICKERS},\n\t\t\t${SELECTORS.MESSAGEROW} ${SELECTORS.REPLYTEXT},\n\t\t\t${SELECTORS.MESSAGEROW} ${SELECTORS.VIDEO},\n\t\t\t${SELECTORS.MESSAGEROW} ${SELECTORS.AIMG},\n\t\t\t${SELECTORS.MESSAGEROW} ${SELECTORS.DIVIMG}\n   \t\t`).forEach((e=>{"VIDEO"!==e.tagName&&"IMG"!==e.tagName?e?.setAttribute("data-obftext",t):(e=e.closest("div"))?.setAttribute("data-obfmedia",t)}))}function obfRuleModifyAttr(){document.querySelectorAll(`${SELECTORS.MESSAGEROW} ${SELECTORS.TEXT}`).forEach((t=>{t.textContent.includes("@pxl")&&t.setAttribute("data-obfpxl","true"),t.textContent.includes("@blr")&&t.setAttribute("data-obfblr","true"),t.textContent.includes("@flp")&&t.setAttribute("data-obfflp","true"),t.textContent.includes("@dim")&&t.setAttribute("data-obfdim","true"),t.textContent.includes("@pxl")||t.removeAttribute("data-obfpxl"),t.textContent.includes("@blr")||t.removeAttribute("data-obfblr"),t.textContent.includes("@flp")||t.removeAttribute("data-obfflp"),t.textContent.includes("@dim")||t.removeAttribute("data-obfdim")}))}function onMessageChange(t){whenAvail((()=>document.querySelector(`${SELECTORS.MESSAGECONTAINER}`)),(()=>{let e=document.querySelector(`${SELECTORS.MESSAGECONTAINER}`);obfObserver&&obfObserver.disconnect(),obfObserver=new MutationObserver((()=>setTimeout((()=>t()),2e3))),obfObserver.observe(e,{childList:!0})}))}function obfInject(t,e,r,o){document.getElementById("hidechat-obfuscate")?.remove();const a={blur:[`filter: blur(${r}px) !important;`,"filter: none !important;"],opacity:[`opacity: ${o} !important;`,"opacity: 1 !important;"],flip:["transform: scaleX(-1) !important;","transform: none !important;"],pixelate:["filter: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='b' x='0' y='0'%3E%3CfeFlood x='4' y='4' height='2' width='2'/%3E%3CfeComposite width='10' height='10'/%3E%3CfeTile result='a'/%3E%3CfeComposite in='SourceGraphic' in2='a' operator='in'/%3E%3CfeMorphology operator='dilate' radius='5'/%3E%3C/filter%3E%3C/svg%3E#b\") !important;","filter: none !important;"]};let i="",n="",l="",f="",u="",E="",d="",s="",c=!1,b=!1;t.includes("blur")&&t.includes("pixelate")&&(u=`${a.blur[0].replace(" !important;","")} ${a.pixelate[0].replace("filter: ","")}`,E=`${a.blur[1]}`,c=!0),e.includes("blur")&&e.includes("pixelate")&&(d=`${a.blur[0].replace(" !important;","")} ${a.pixelate[0].replace("filter: ","")}`,s=`${a.blur[1]}`,b=!0),t.forEach((t=>{void 0!==a[t]&&(c&&"blur"==t||c&&"pixelate"==t||(i+=`${a[t][0]}`,l+=`${a[t][1]}`))})),e.forEach((t=>{void 0!==a[t]&&(b&&"blur"===t||b&&"pixelate"===t||(n+=`${a[t][0]}`,f+=`${a[t][1]}`))}));const S=document.createElement("style");S.setAttribute("id","hidechat-obfuscate"),S.innerHTML+=`div[data-obftext='true'] { ${i} ${u} } div[data-obftext='true']:hover { ${l} ${E} } `,S.innerHTML+=`div[data-obfmedia='true'] { ${n} ${d} } div[data-obfmedia='true']:hover { ${f} ${s}} `,document.head.appendChild(S)}function obfRuleInject(){const t=document.createElement("style");t.setAttribute("id","hidechat-obfrule"),t.innerHTML+="div[data-obfpxl=\"true\"] { filter: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='b' x='0' y='0'%3E%3CfeFlood x='4' y='4' height='2' width='2'/%3E%3CfeComposite width='10' height='10'/%3E%3CfeTile result='a'/%3E%3CfeComposite in='SourceGraphic' in2='a' operator='in'/%3E%3CfeMorphology operator='dilate' radius='5'/%3E%3C/filter%3E%3C/svg%3E#b\") !important; } div[data-obfpxl=\"true\"]:hover { filter: none !important; }",t.innerHTML+='div[data-obfflp="true"] { transform: scaleX(-1) !important; } div[data-obfflp="true"]:hover { transform: scaleX(1) !important; }',t.innerHTML+='div[data-obfblr="true"] { filter: blur(8px) !important; } div[data-obfblr="true"]:hover { filter: blur(0px) !important; }',t.innerHTML+='div[data-obfdim="true"] { opacity: 0.1 !important; } div[data-obfdim="true"]:hover { opacity: 1 !important; }',document.head.appendChild(t)}
+let obfObserver, obfInterval, obfTimeout, obfIntervalChatLeft;
+
+const PIXELATE_FILTER =
+	"filter: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='b' x='0' y='0'%3E%3CfeFlood x='4' y='4' height='2' width='2'/%3E%3CfeComposite width='10' height='10'/%3E%3CfeTile result='a'/%3E%3CfeComposite in='SourceGraphic' in2='a' operator='in'/%3E%3CfeMorphology operator='dilate' radius='5'/%3E%3C/filter%3E%3C/svg%3E#b\") !important;";
+
+// Marks the messages (and chat-list previews) of obfuscated chats so the obfuscation stylesheet applies to them.
+function makeObfInject(chats) {
+	const obfuscatedUrls = new Set(chats.filter((chat) => chat.isObfuscated).map((chat) => chat.chatURL));
+
+	function startObfuscating() {
+		if (obfIntervalChatLeft) clearInterval(obfIntervalChatLeft);
+		obfIntervalChatLeft = setInterval(() => markChatList(obfuscatedUrls), 1000);
+
+		if (isMessenger) {
+			let messageList = document.querySelector(SELECTORS.MESSAGECONTAINER);
+			const markMessages = () => {
+				obfRuleModifyAttr();
+				injectMessagesAttr(obfuscatedUrls.has(getCurrentChat()) ? "true" : "false", messageList);
+			};
+
+			if (obfInterval) clearInterval(obfInterval);
+			if (obfTimeout) clearTimeout(obfTimeout);
+			obfInterval = setInterval(() => {
+				if (!messageList) messageList = document.querySelector(SELECTORS.MESSAGECONTAINER);
+				if (messageList) markMessages();
+			}, 500);
+
+			// After 10 seconds, swap polling for an observer.
+			// v2 bug, kept for now: markMessages keeps using the first message list, which Messenger replaces
+			// when you switch chats.
+			obfTimeout = setTimeout(() => {
+				if (obfInterval) clearInterval(obfInterval);
+				onMessageChange(markMessages);
+			}, 10000);
+		} else {
+			if (obfInterval) clearInterval(obfInterval);
+			if (obfTimeout) clearTimeout(obfTimeout);
+			obfInterval = setInterval(() => {
+				const messageLists = document.querySelectorAll(SELECTORS.MESSAGECONTAINER);
+				obfRuleModifyAttr();
+				// v2 bug, kept for now: every chat pop-up is obfuscated, whatever its own setting.
+				for (let i = 0; i < messageLists.length; i++) injectMessagesAttr("true", messageLists[i]);
+			}, 1000);
+		}
+	}
+
+	whenAvail(
+		() => document.querySelector(SELECTORS.MESSAGECONTAINER),
+		() => startObfuscating()
+	);
+}
+
+function markChatList(obfuscatedUrls) {
+	const chatList = document.querySelector(SELECTORS.CHATCONTAINER);
+	if (!chatList) return;
+	const rows = chatList.children;
+
+	for (let i = 0; i < rows.length; i++) {
+		const chatLink = rows[i].querySelector(SELECTORS.CHATLINK);
+		if (!chatLink) continue;
+		if (!obfuscatedUrls.has(getChatId(chatLink.href))) continue;
+
+		chatLink.querySelectorAll(`${SELECTORS.DIVIMG}, ${SELECTORS.TEXTSPAN}`).forEach((element) => {
+			element = element.closest("div");
+			// closest("div") is never an IMG, so pictures in the chat list get data-obftext too.
+			if (element.tagName === "IMG") element?.setAttribute("data-obfmedia", "true");
+			element?.setAttribute("data-obftext", "true");
+		});
+	}
+}
+
+// Sets data-obftext / data-obfmedia to `value` ("true" or "false") on every message in `messageList`.
+function injectMessagesAttr(value, messageList) {
+	if (!messageList) return;
+
+	const selector = [
+		SELECTORS.TEXT,
+		SELECTORS.STICKERS,
+		SELECTORS.REPLYTEXT,
+		SELECTORS.VIDEO,
+		SELECTORS.AIMG,
+		SELECTORS.DIVIMG,
+	]
+		.map((part) => `${SELECTORS.MESSAGEROW} ${part}`)
+		.join(", ");
+
+	messageList.querySelectorAll(selector).forEach((element) => {
+		if (element.tagName !== "VIDEO" && element.tagName !== "IMG") {
+			element?.setAttribute("data-obftext", value);
+		} else {
+			element.closest("div")?.setAttribute("data-obfmedia", value);
+		}
+	});
+}
+
+// Marks messages that contain an @ rule (@pxl, @blr, @flp, @dim) so the matching style applies.
+function obfRuleModifyAttr() {
+	const rules = { "@pxl": "data-obfpxl", "@blr": "data-obfblr", "@flp": "data-obfflp", "@dim": "data-obfdim" };
+
+	document.querySelectorAll(`${SELECTORS.MESSAGEROW} ${SELECTORS.TEXT}`).forEach((message) => {
+		for (const [rule, attribute] of Object.entries(rules)) {
+			if (message.textContent.includes(rule)) message.setAttribute(attribute, "true");
+			else message.removeAttribute(attribute);
+		}
+	});
+}
+
+function onMessageChange(callback) {
+	whenAvail(
+		() => document.querySelector(`${SELECTORS.MESSAGECONTAINER}`),
+		() => {
+			const messageList = document.querySelector(`${SELECTORS.MESSAGECONTAINER}`);
+			if (obfObserver) obfObserver.disconnect();
+			obfObserver = new MutationObserver(() => setTimeout(() => callback(), 2000));
+			obfObserver.observe(messageList, { childList: true });
+		}
+	);
+}
+
+// Replaces the stylesheet for data-obftext and data-obfmedia with the user's chosen methods.
+function obfInject(textMethods, mediaMethods, blurIntensity, brightnessIntensity) {
+	document.getElementById("hidechat-obfuscate")?.remove();
+
+	// Each method: [style while obfuscated, style on hover].
+	const methods = {
+		blur: [`filter: blur(${blurIntensity}px) !important;`, "filter: none !important;"],
+		opacity: [`opacity: ${brightnessIntensity} !important;`, "opacity: 1 !important;"],
+		flip: ["transform: scaleX(-1) !important;", "transform: none !important;"],
+		pixelate: [PIXELATE_FILTER, "filter: none !important;"],
+	};
+
+	// Blur and pixelate both set `filter`, so when both are picked they're merged into one declaration.
+	function buildStyles(selected) {
+		const combined = selected.includes("blur") && selected.includes("pixelate");
+		const styles = {
+			normal: "",
+			hover: "",
+			combinedNormal: combined
+				? `${methods.blur[0].replace(" !important;", "")} ${methods.pixelate[0].replace("filter: ", "")}`
+				: "",
+			combinedHover: combined ? `${methods.blur[1]}` : "",
+		};
+
+		selected.forEach((method) => {
+			if (methods[method] === undefined) return;
+			if (combined && (method === "blur" || method === "pixelate")) return;
+			styles.normal += `${methods[method][0]}`;
+			styles.hover += `${methods[method][1]}`;
+		});
+		return styles;
+	}
+
+	const text = buildStyles(textMethods);
+	const media = buildStyles(mediaMethods);
+
+	const style = document.createElement("style");
+	style.setAttribute("id", "hidechat-obfuscate");
+	style.innerHTML =
+		`div[data-obftext='true'] { ${text.normal} ${text.combinedNormal} } ` +
+		`div[data-obftext='true']:hover { ${text.hover} ${text.combinedHover} } ` +
+		`div[data-obfmedia='true'] { ${media.normal} ${media.combinedNormal} } ` +
+		`div[data-obfmedia='true']:hover { ${media.hover} ${media.combinedHover}} `;
+	document.head.appendChild(style);
+}
+
+// Adds the fixed styles for the @ rules.
+function obfRuleInject() {
+	const style = document.createElement("style");
+	style.setAttribute("id", "hidechat-obfrule");
+	style.innerHTML =
+		`div[data-obfpxl="true"] { ${PIXELATE_FILTER} } div[data-obfpxl="true"]:hover { filter: none !important; }` +
+		'div[data-obfflp="true"] { transform: scaleX(-1) !important; } div[data-obfflp="true"]:hover { transform: scaleX(1) !important; }' +
+		'div[data-obfblr="true"] { filter: blur(8px) !important; } div[data-obfblr="true"]:hover { filter: blur(0px) !important; }' +
+		'div[data-obfdim="true"] { opacity: 0.1 !important; } div[data-obfdim="true"]:hover { opacity: 1 !important; }';
+	document.head.appendChild(style);
+}

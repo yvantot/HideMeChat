@@ -1,1 +1,178 @@
-let storage=chrome.storage.local,preferenceData={obfMethod:{text:["opacity","flip"],image:["blur","pixelate"],blurIntensity:5,brightnessIntensity:.3},pinnedColor:"#162184",userTheme:"light",userPassword:""};function createContexts(){const e=["*://www.messenger.com/*","*://www.facebook.com/*"],t=["*://www.messenger.com/e2ee/t/*","*://www.messenger.com/t/*","*://www.facebook.com/messages/t/*","*://www.facebook.com/messages/e2ee/t/*"];chrome.contextMenus.create({id:"hidechatMain",title:"Hide Chat: Private Messenger",contexts:["link"],documentUrlPatterns:e,targetUrlPatterns:t}),chrome.contextMenus.create({id:"hideAllChatExcept",parentId:"hidechatMain",title:"Hide EVERYTHING except this chat",contexts:["link"],documentUrlPatterns:e,targetUrlPatterns:t}),chrome.contextMenus.create({id:"hideThisChat",parentId:"hidechatMain",title:"Hide THIS chat",contexts:["link"],documentUrlPatterns:e,targetUrlPatterns:t}),chrome.contextMenus.create({id:"pinThisChat",parentId:"hidechatMain",title:"Pin THIS chat",contexts:["link"],documentUrlPatterns:e,targetUrlPatterns:t}),chrome.contextMenus.create({id:"lockThisChat",parentId:"hidechatMain",title:"Lock THIS chat",contexts:["link"],documentUrlPatterns:e,targetUrlPatterns:t}),chrome.contextMenus.create({id:"obfuscateThisChat",parentId:"hidechatMain",title:"Obfuscate THIS chat",contexts:["link"],documentUrlPatterns:e,targetUrlPatterns:t})}function initStorage(){storage.get(null,(e=>{0===Object.keys(e).length?storage.set({preferences:preferenceData,messengerChats:[]}):e.hidden_chat&&(storage.clear(),storage.set({preferences:preferenceData,messengerChats:[]},(()=>{storage.get(null,(t=>{e.hidden_chat.forEach((e=>{t.messengerChats.push({chatName:e,chatImg:"#",chatURL:e,lastMsg:"#",dateAdded:getDateNow(),isHidden:!0,isLocked:!1,isPinned:!1,isObfuscated:!1})})),storage.set(t)}))})))}))}function getDateNow(){const e=new Date;return`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,"0")}-${String(e.getDate()).padStart(2,"0")}`}chrome.runtime.onMessage.addListener(((e,t,s)=>{switch(e.message){case"updateChats":return chrome.tabs.query({active:!0,currentWindow:!0},(e=>{(e[0]?.url.includes("https://www.facebook.com")||e[0]?.url.includes("https://www.messenger.com"))&&chrome.tabs.sendMessage(e[0].id,{message:"getAllChat"},(e=>{s(e)}))})),!0;default:break}})),chrome.runtime.onInstalled.addListener((()=>{initStorage(),createContexts()})),chrome.contextMenus.onClicked.addListener((e=>{switch(e.menuItemId){case"hideThisChat":chrome.tabs.query({active:!0,currentWindow:!0},(t=>{chrome.tabs.sendMessage(t[0].id,{message:"getThisChat",clickedChat:e.linkUrl},null,(e=>{storage.get(null,(t=>{const s=new Set(t.messengerChats.map((e=>e.chatURL)));if(s.has(e.url)){const s=t.messengerChats.findIndex((t=>t.chatURL===e.url));t.messengerChats[s]={chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:getDateNow(),isHidden:!0,isLocked:t.messengerChats[s].isLocked,isPinned:t.messengerChats[s].isPinned,isObfuscated:t.messengerChats[s].isObfuscated},storage.set(t)}else t.messengerChats.push({chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:getDateNow(),isHidden:!0,isLocked:!1,isPinned:!1,isObfuscated:!1}),storage.set(t)}))}))}));break;case"hideAllChatExcept":chrome.tabs.query({active:!0,currentWindow:!0},(t=>{chrome.tabs.sendMessage(t[0].id,{message:"getAllChat"},null,(t=>{storage.get(null,(s=>{const a=new Set(s.messengerChats.map((e=>e.chatURL))),n=e.linkUrl.replace("https://www.facebook.com/messages","").replace("https://www.messenger.com","");t.forEach((e=>{if(e.url!=n)if(a.has(e.url)){const t=s.messengerChats.findIndex((t=>t.chatURL===e.url));s.messengerChats[t]={chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:getDateNow(),isHidden:!0,isLocked:s.messengerChats[t].isLocked,isPinned:s.messengerChats[t].isPinned,isObfuscated:s.messengerChats[t].isObfuscated}}else s.messengerChats.push({chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:getDateNow(),isHidden:!0,isLocked:!1,isPinned:!1,isObfuscated:!1})})),storage.set(s)}))}))}));break;case"obfuscateThisChat":chrome.tabs.query({active:!0,currentWindow:!0},(t=>{chrome.tabs.sendMessage(t[0].id,{message:"getThisChat",clickedChat:e.linkUrl},null,(e=>{storage.get(null,(t=>{const s=new Set(t.messengerChats.map((e=>e.chatURL)));if(s.has(e.url)){const s=t.messengerChats.findIndex((t=>t.chatURL===e.url));t.messengerChats[s]={chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:t.messengerChats[s].dateAdded,isHidden:t.messengerChats[s].isHidden,isLocked:t.messengerChats[s].isLocked,isPinned:t.messengerChats[s].isPinned,isObfuscated:!0},storage.set(t)}else t.messengerChats.push({chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:getDateNow(),isHidden:!1,isLocked:!1,isPinned:!1,isObfuscated:!0}),storage.set(t)}))}))}));break;case"pinThisChat":chrome.tabs.query({active:!0,currentWindow:!0},(t=>{chrome.tabs.sendMessage(t[0].id,{message:"getThisChat",clickedChat:e.linkUrl},null,(e=>{storage.get(null,(t=>{const s=new Set(t.messengerChats.map((e=>e.chatURL)));if(s.has(e.url)){const s=t.messengerChats.findIndex((t=>t.chatURL===e.url));t.messengerChats[s]={chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:t.messengerChats[s].dateAdded,isHidden:t.messengerChats[s].isHidden,isLocked:t.messengerChats[s].isLocked,isPinned:!0,isObfuscated:t.messengerChats[s].isObfuscated},storage.set(t)}else t.messengerChats.push({chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:getDateNow(),isHidden:!1,isLocked:!1,isPinned:!0,isObfuscated:!1}),storage.set(t)}))}))}));break;case"lockThisChat":chrome.tabs.query({active:!0,currentWindow:!0},(t=>{chrome.tabs.sendMessage(t[0].id,{message:"getThisChat",clickedChat:e.linkUrl},null,(e=>{storage.get(null,(t=>{const s=new Set(t.messengerChats.map((e=>e.chatURL)));if(s.has(e.url)){const s=t.messengerChats.findIndex((t=>t.chatURL===e.url));t.messengerChats[s]={chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:t.messengerChats[s].dateAdded,isHidden:t.messengerChats[s].isHidden,isLocked:!0,isPinned:t.messengerChats[s].isPinned,isObfuscated:t.messengerChats[s].isObfuscated},storage.set(t)}else t.messengerChats.push({chatName:e.name,chatImg:e.img,chatURL:e.url,lastMsg:e.lastMsg,dateAdded:getDateNow(),isHidden:!1,isLocked:!0,isPinned:!1,isObfuscated:!1}),storage.set(t)}))}))}));break;default:break}}));
+let storage = chrome.storage.local;
+let preferenceData = {
+	obfMethod: {
+		text: ["opacity", "flip"],
+		image: ["blur", "pixelate"],
+		blurIntensity: 5,
+		brightnessIntensity: 0.3,
+	},
+	pinnedColor: "#162184",
+	userTheme: "light",
+	userPassword: "",
+};
+
+function createContexts() {
+	const documentUrlPatterns = ["*://www.messenger.com/*", "*://www.facebook.com/*"];
+	const targetUrlPatterns = [
+		"*://www.messenger.com/e2ee/t/*",
+		"*://www.messenger.com/t/*",
+		"*://www.facebook.com/messages/t/*",
+		"*://www.facebook.com/messages/e2ee/t/*",
+	];
+	const shared = { contexts: ["link"], documentUrlPatterns, targetUrlPatterns };
+
+	chrome.contextMenus.create({ id: "hidechatMain", title: "Hide Chat: Private Messenger", ...shared });
+	const items = [
+		["hideAllChatExcept", "Hide EVERYTHING except this chat"],
+		["hideThisChat", "Hide THIS chat"],
+		["pinThisChat", "Pin THIS chat"],
+		["lockThisChat", "Lock THIS chat"],
+		["obfuscateThisChat", "Obfuscate THIS chat"],
+	];
+	items.forEach(([id, title]) => chrome.contextMenus.create({ id, parentId: "hidechatMain", title, ...shared }));
+}
+
+// Creates empty storage on first install, and converts v1 data (a list of hidden chat URLs) to the v2 format.
+function initStorage() {
+	storage.get(null, (oldData) => {
+		if (Object.keys(oldData).length === 0) {
+			storage.set({ preferences: preferenceData, messengerChats: [] });
+			return;
+		}
+		if (!oldData.hidden_chat) return;
+
+		storage.clear();
+		storage.set({ preferences: preferenceData, messengerChats: [] }, () => {
+			storage.get(null, (data) => {
+				oldData.hidden_chat.forEach((chatUrl) => {
+					data.messengerChats.push({
+						chatName: chatUrl,
+						chatImg: "#",
+						chatURL: chatUrl,
+						lastMsg: "#",
+						dateAdded: getDateNow(),
+						isHidden: true,
+						isLocked: false,
+						isPinned: false,
+						isObfuscated: false,
+					});
+				});
+				storage.set(data);
+			});
+		});
+	});
+}
+
+function getDateNow() {
+	const now = new Date();
+	return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+// Adds `chat` (as sent by the content script) to the stored chats with `flag` turned on, or refreshes its details
+// if it's already stored. `knownUrls` holds the URLs that were stored before the update.
+// Hiding resets the date the chat was added; the other flags keep it.
+function upsertChat(data, knownUrls, chat, flag) {
+	if (knownUrls.has(chat.url)) {
+		const index = data.messengerChats.findIndex((stored) => stored.chatURL === chat.url);
+		const stored = data.messengerChats[index];
+		data.messengerChats[index] = {
+			chatName: chat.name,
+			chatImg: chat.img,
+			chatURL: chat.url,
+			lastMsg: chat.lastMsg,
+			dateAdded: flag === "isHidden" ? getDateNow() : stored.dateAdded,
+			isHidden: stored.isHidden,
+			isLocked: stored.isLocked,
+			isPinned: stored.isPinned,
+			isObfuscated: stored.isObfuscated,
+			[flag]: true,
+		};
+	} else {
+		data.messengerChats.push({
+			chatName: chat.name,
+			chatImg: chat.img,
+			chatURL: chat.url,
+			lastMsg: chat.lastMsg,
+			dateAdded: getDateNow(),
+			isHidden: false,
+			isLocked: false,
+			isPinned: false,
+			isObfuscated: false,
+			[flag]: true,
+		});
+	}
+}
+
+// Asks the page for the details of the right-clicked chat, then turns `flag` on for it.
+function flagClickedChat(linkUrl, flag) {
+	chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+		chrome.tabs.sendMessage(tabs[0].id, { message: "getThisChat", clickedChat: linkUrl }, null, (chat) => {
+			storage.get(null, (data) => {
+				const knownUrls = new Set(data.messengerChats.map((stored) => stored.chatURL));
+				upsertChat(data, knownUrls, chat, flag);
+				storage.set(data);
+			});
+		});
+	});
+}
+
+// Hides every chat in the list except the right-clicked one.
+function hideAllChatsExcept(linkUrl) {
+	chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+		chrome.tabs.sendMessage(tabs[0].id, { message: "getAllChat" }, null, (chats) => {
+			storage.get(null, (data) => {
+				const knownUrls = new Set(data.messengerChats.map((stored) => stored.chatURL));
+				const keptUrl = linkUrl
+					.replace("https://www.facebook.com/messages", "")
+					.replace("https://www.messenger.com", "");
+				chats.forEach((chat) => {
+					if (chat.url != keptUrl) upsertChat(data, knownUrls, chat, "isHidden");
+				});
+				storage.set(data);
+			});
+		});
+	});
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+	switch (request.message) {
+		case "updateChats":
+			chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+				if (tabs[0]?.url.includes("https://www.facebook.com") || tabs[0]?.url.includes("https://www.messenger.com")) {
+					chrome.tabs.sendMessage(tabs[0].id, { message: "getAllChat" }, (chats) => {
+						sendResponse(chats);
+					});
+				}
+			});
+			return true;
+		default:
+			break;
+	}
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+	initStorage();
+	createContexts();
+});
+
+chrome.contextMenus.onClicked.addListener((info) => {
+	switch (info.menuItemId) {
+		case "hideThisChat":
+			flagClickedChat(info.linkUrl, "isHidden");
+			break;
+		case "hideAllChatExcept":
+			hideAllChatsExcept(info.linkUrl);
+			break;
+		case "obfuscateThisChat":
+			flagClickedChat(info.linkUrl, "isObfuscated");
+			break;
+		case "pinThisChat":
+			flagClickedChat(info.linkUrl, "isPinned");
+			break;
+		case "lockThisChat":
+			flagClickedChat(info.linkUrl, "isLocked");
+			break;
+		default:
+			break;
+	}
+});

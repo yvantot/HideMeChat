@@ -1,1 +1,62 @@
-storage.get(null,(e=>{makeHideInject(e.messengerChats,"hidechat-hidden"),obfRuleInject(),obfRuleModifyAttr(),obfInject(e.preferences.obfMethod.text,e.preferences.obfMethod.image,e.preferences.obfMethod.blurIntensity,e.preferences.obfMethod.brightnessIntensity),makeObfInject(e.messengerChats);const t=e.messengerChats.filter((e=>e.isPinned));pinChats(t,`background-color: ${hexToRgb(e.preferences.pinnedColor)} !important;`),lockedUICSS(),makeLockedInject(e)})),chrome.storage.onChanged.addListener((()=>{storage.get(null,(e=>{makeHideInject(e.messengerChats,"hidechat-hidden");const t=e.messengerChats.filter((e=>e.isPinned));pinChats(t,`background-color: ${hexToRgb(e.preferences.pinnedColor)} !important;`),makeLockedInject(e),obfInject(e.preferences.obfMethod.text,e.preferences.obfMethod.image,e.preferences.obfMethod.blurIntensity,e.preferences.obfMethod.brightnessIntensity),makeObfInject(e.messengerChats)}))})),onUrlChanged((()=>{isMessenger=location.origin.includes("https://www.messenger.com")||location.href.includes("https://www.facebook.com/messages"),isFacebook=location.origin.includes("https://www.facebook.com"),storage.get(null,(e=>{makeLockedInject(e),makeObfInject(e.messengerChats);const t=e.messengerChats.filter((e=>e.isPinned));pinChats(t,`background-color: ${hexToRgb(e.preferences.pinnedColor)} !important;`)}))})),chrome.runtime.onMessage.addListener(((e,t,n)=>{switch(e.message){case"getThisChat":return n(getChatInfo(getChatByUrl(e.clickedChat))),!0;case"getAllChat":return n(getAllChat()),!0;case"toggleHiddenAll":storage.get(null,(e=>{toggleHide(e.messengerChats,"hidechat-hiddentoggle")}));break;default:break}}));
+function getPinnedChats(data) {
+	return data.messengerChats.filter((chat) => chat.isPinned);
+}
+
+function getPinStyle(data) {
+	return `background-color: ${hexToRgb(data.preferences.pinnedColor)} !important;`;
+}
+
+function applyObfMethod(data) {
+	const { text, image, blurIntensity, brightnessIntensity } = data.preferences.obfMethod;
+	obfInject(text, image, blurIntensity, brightnessIntensity);
+}
+
+storage.get(null, (data) => {
+	makeHideInject(data.messengerChats, "hidechat-hidden");
+	obfRuleInject();
+	obfRuleModifyAttr();
+	applyObfMethod(data);
+	makeObfInject(data.messengerChats);
+	pinChats(getPinnedChats(data), getPinStyle(data));
+	lockedUICSS();
+	makeLockedInject(data);
+});
+
+chrome.storage.onChanged.addListener(() => {
+	storage.get(null, (data) => {
+		makeHideInject(data.messengerChats, "hidechat-hidden");
+		pinChats(getPinnedChats(data), getPinStyle(data));
+		makeLockedInject(data);
+		applyObfMethod(data);
+		makeObfInject(data.messengerChats);
+	});
+});
+
+onUrlChanged(() => {
+	isMessenger =
+		location.origin.includes("https://www.messenger.com") ||
+		location.href.includes("https://www.facebook.com/messages");
+	isFacebook = location.origin.includes("https://www.facebook.com");
+
+	storage.get(null, (data) => {
+		makeLockedInject(data);
+		makeObfInject(data.messengerChats);
+		pinChats(getPinnedChats(data), getPinStyle(data));
+	});
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+	switch (request.message) {
+		case "getThisChat":
+			sendResponse(getChatInfo(getChatByUrl(request.clickedChat)));
+			return true;
+		case "getAllChat":
+			sendResponse(getAllChat());
+			return true;
+		case "toggleHiddenAll":
+			storage.get(null, (data) => toggleHide(data.messengerChats, "hidechat-hiddentoggle"));
+			break;
+		default:
+			break;
+	}
+});
