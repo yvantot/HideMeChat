@@ -7,12 +7,22 @@
 		<meta name="description" content="Hide Chat main" />
 		<meta name="author" content="Jun Ivanne Dalman" />
 		<link rel="stylesheet" href="../css/popup.css" />
+		<link rel="stylesheet" href="../css/lock.css" />
+		<script src="../js/shared/password.js" defer></script>
 		<script src="../js/popup/utilities.js" defer></script>
 		<script src="../js/popup/mainPopup.js" defer></script>
 		<style>@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
 </style>
 	</head>
 	<body class="w-96 h-fit min-h-52 font-Main text-gray-800 dark:text-gray-100 dark:bg-gray-900 select-none">
+		<div id="hc-gate" class="hc-gate" hidden>
+			<form id="hc-gate-form" class="hc-card">
+				<h1>HideMeChat is locked</h1>
+				<input id="hc-gate-password" class="hc-field" type="password" placeholder="Password" autocomplete="current-password" maxlength="126" />
+				<button class="hc-button" type="submit">Unlock</button>
+				<p id="hc-gate-message" class="hc-message hc-error" role="status"></p>
+			</form>
+		</div>
 		<header class="flex items-center justify-between mx-3 mt-3 mb-4">
 			<div class="flex items-center" title="Changes:&#013;&#013;* Errors and bugs fixes.&#013;* No special permissions.&#013;* Revamped user interface & added dark mode. &#013;* Chat details.&#013;* Now works with facebook.com, facebook.com/messages.&#013;* Hide chats.&#013;* Pin chats.&#013;* Lock chats.&#013;* Obfuscate chats: blur, pixelate, flip or dim.&#013;* Use @rule to obfuscate a single message.&#013;* Export/import data.&#013;* User preferences & customizations.&#013;* Backward compatible with previous version.&#013;- Localization on the way.">
 				<img class="size-10" src="../assets/hidechat_icon48.png" alt="" />

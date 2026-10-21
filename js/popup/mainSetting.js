@@ -53,8 +53,59 @@ function updateStored(change) {
 	});
 }
 
-storage.get(null, (data) => {
-	themeToggle();
+const passwordForm = document.getElementById("password-form");
+const passwordCurrent = document.getElementById("password-current");
+const passwordNew = document.getElementById("password-new");
+const passwordConfirm = document.getElementById("password-confirm");
+const passwordMessage = document.getElementById("password-message");
+
+function showPasswordMessage(text, isError) {
+	passwordMessage.textContent = text;
+	if (isError) passwordMessage.classList.add("hc-error");
+	else passwordMessage.classList.remove("hc-error");
+}
+
+// Shows or hides the password form. The current-password field only appears when a password is set.
+async function togglePasswordForm() {
+	const data = await getStoredData();
+	passwordCurrent.hidden = !data.preferences.password;
+	passwordForm.hidden = !passwordForm.hidden;
+	showPasswordMessage("", false);
+	if (!passwordForm.hidden) (passwordCurrent.hidden ? passwordNew : passwordCurrent).focus();
+}
+
+async function savePassword(event) {
+	event.preventDefault();
+	const button = passwordForm.querySelector("button");
+	button.disabled = true;
+	try {
+		const data = await getStoredData();
+		if (data.preferences.password && !(await verifyPassword(passwordCurrent.value, data.preferences.password))) {
+			showPasswordMessage("The current password is wrong.", true);
+			return;
+		}
+		if (!isValidNewPassword(passwordNew.value)) {
+			showPasswordMessage(`Use at least ${PASSWORD_MIN_LENGTH} characters.`, true);
+			return;
+		}
+		if (passwordNew.value !== passwordConfirm.value) {
+			showPasswordMessage("The new passwords don't match.", true);
+			return;
+		}
+		data.preferences.password = await hashPassword(passwordNew.value);
+		await storage.set(data);
+		passwordCurrent.value = passwordNew.value = passwordConfirm.value = "";
+		passwordCurrent.hidden = false;
+		showPasswordMessage("Password saved.", false);
+	} finally {
+		button.disabled = false;
+	}
+}
+
+themeToggle();
+
+// Nothing is wired up until the page is unlocked.
+requireUnlock(() => storage.get(null, (data) => {
 	initObfData(data);
 
 	setObfuscate.addEventListener("click", () => {
@@ -88,9 +139,8 @@ storage.get(null, (data) => {
 		opacityDesc.textContent = opacityRange.value.padStart(2, "0");
 	});
 
-	changePassword.addEventListener("click", () => {
-		setPassword();
-	});
+	changePassword.addEventListener("click", () => togglePasswordForm());
+	passwordForm.addEventListener("submit", savePassword);
 	changeLanguage.addEventListener("click", () => {
 		alert(
 			"I can only support English for now, but any help in translating is welcome. Please contact me at: dalmanjunivanne@gmail.com"
@@ -110,10 +160,8 @@ storage.get(null, (data) => {
 			latest.preferences.pinnedColor = pinnedColor.value;
 		});
 	});
-});
 
-chrome.storage.onChanged.addListener(() => {
-	storage.get(null, (data) => {
-		initObfData(data);
+	chrome.storage.onChanged.addListener(() => {
+		storage.get(null, (latest) => initObfData(latest));
 	});
-});
+}));

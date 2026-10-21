@@ -9,6 +9,7 @@ function refreshStyles() {
 	setStyle("hidechat-pinned", pinCSS(data.messengerChats, data.preferences.pinnedColor));
 	setStyle("hidechat-obfuscate", obfuscationCSS(data.messengerChats, data.preferences.obfMethod));
 	setStyle("hidechat-obfrule", AT_RULE_CSS);
+	setStyle("hidechat-lockedrows", lockedRowsCSS(data.messengerChats));
 	setStyle("hidechat-lockedchat", LOCK_CSS);
 }
 
@@ -19,7 +20,8 @@ function apply() {
 	markChatLists();
 	markOpenChats(data.messengerChats);
 	markAtRules();
-	updateLock(data, apply);
+	updateLock(data);
+	markLockedPopups(data);
 }
 
 function load() {
@@ -33,6 +35,7 @@ function load() {
 load();
 chrome.storage.onChanged.addListener(load);
 new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true });
+listenForUnlock(apply);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	switch (request.message) {

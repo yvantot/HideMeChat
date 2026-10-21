@@ -41,6 +41,14 @@ Done, along with every bug in the findings' code-review list except the lock's p
 
 ## 5. Make the lock honest
 
+Done:
+- **Password:** stored as a salted PBKDF2-SHA256 hash (`js/shared/password.js`, 600,000 iterations). v2's plain-text password is upgraded on install/update, on import, and wherever it's read.
+- **Exports** carry the hash, so locks survive a restore.
+- **Lock screen** is an extension frame (`html/lock.html`), so Messenger's page can't read the password as it's typed. It accepts unlock messages only from that frame's origin and window.
+- **Popup and settings** sit behind the same password; an unlock lasts 5 minutes (`chrome.storage.session`).
+- **Locked chats** have their chat-list preview hidden and their pop-ups covered.
+- **Prompts:** every password `prompt`/`alert` is replaced by a form.
+
 - Store a salted hash of the password, never the password itself. Never show it back. Leave it out of exports, or encrypt the export.
 - Replace `prompt`/`alert` with proper in-page and popup forms.
 - Lock the popup itself, so nobody can just untick features there.

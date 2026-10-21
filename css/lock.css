@@ -1,0 +1,108 @@
+/* Password forms: the lock screen frame (lock.html), the popup's lock and the settings password form. */
+.hc-card {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	max-width: 340px;
+	padding: 20px;
+	border-radius: 8px;
+	background-color: rgba(0, 21, 90, 0.92);
+	color: #fafafa;
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	font-size: 14px;
+	text-align: center;
+}
+.hc-card h1 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+.hc-card p {
+	margin: 0;
+	line-height: 1.4;
+}
+.hc-field {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 7px 9px;
+	border: 1px solid #c7c7d1;
+	border-radius: 5px;
+	background-color: #fff;
+	color: #1f2937;
+	font: inherit;
+}
+.hc-button {
+	padding: 7px 12px;
+	border: none;
+	border-radius: 5px;
+	background-color: #5a5a5a;
+	color: #fafafa;
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+.hc-button:hover {
+	background-color: #474747;
+}
+.hc-button:disabled {
+	opacity: 0.6;
+	cursor: progress;
+}
+.hc-message {
+	min-height: 1.2em;
+	font-size: 13px;
+}
+.hc-message.hc-error {
+	color: #fca5a5;
+}
+
+/* lock.html: transparent page, card centred in the frame. */
+body.hc-frame {
+	margin: 0;
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+}
+
+/* Popup and settings: covers the page until the password is entered. */
+.hc-gate {
+	position: fixed;
+	inset: 0;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	background-color: #f3f4f6;
+}
+.dark .hc-gate {
+	background-color: #111827;
+}
+.hc-card[hidden],
+.hc-gate[hidden],
+.hc-password-form[hidden] {
+	display: none;
+}
+
+/* Settings: create / change password. */
+.hc-password-form {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+}
+.dark .hc-password-form {
+	border-color: #1f2937;
+}
+.hc-password-form .hc-message {
+	color: #059669;
+}
+.hc-password-form .hc-message.hc-error {
+	color: #e11d48;
+}

@@ -1,3 +1,5 @@
+importScripts("/js/shared/password.js");
+
 let storage = chrome.storage.local;
 let preferenceData = {
 	obfMethod: {
@@ -8,7 +10,6 @@ let preferenceData = {
 	},
 	pinnedColor: "#162184",
 	userTheme: "light",
-	userPassword: "",
 };
 
 function createContexts() {
@@ -158,8 +159,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	}
 });
 
+// Replaces a plain-text password left by v2 with its hash.
+function upgradeStoredPassword() {
+	storage.get(null, async (data) => {
+		if (await upgradeLegacyPassword(data)) storage.set(data);
+	});
+}
+
 chrome.runtime.onInstalled.addListener(() => {
 	initStorage();
+	upgradeStoredPassword();
 	// onInstalled also runs on updates, when the menu items from the old version may still exist.
 	chrome.contextMenus.removeAll(() => createContexts());
 });

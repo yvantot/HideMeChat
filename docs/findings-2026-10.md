@@ -108,6 +108,13 @@ These are the same on facebook.com/messages and messenger.com, and all of them s
 - **Pop-ups:** they now follow each chat's own obfuscate setting, matched by the chat name in their header (see below).
 - **Info panel:** `page.js` no longer looks for it. While locked, everything in `[role="main"]` except the lock screen is hidden with `visibility: hidden`, which covers the panel and keeps the layout's size.
 
+### Status after step 5
+
+- **Password:** the plain-text password and the unprotected popup are fixed. The password is a salted hash, and the popup and settings ask for it.
+- **Lock screen:** it's an extension frame. While it's on the page, Chrome also blocks other extensions (including browser automation) from screenshotting or scripting that tab.
+- **Checked by you on the live page:** the lock screen, unlocking, the popup's password gate, and changing the password.
+- **Checked by me:** previews hidden in the chat lists and dropdown, and locked pop-ups covered.
+
 ### Pop-up chat identity
 
 A pop-up has no `/messages/t/` link anywhere in its ancestors. What it does have:

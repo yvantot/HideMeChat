@@ -43,6 +43,17 @@
             "run_at": "document_idle"
         }
     ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "html/lock.html"
+            ],
+            "matches": [
+                "*://www.messenger.com/*",
+                "*://www.facebook.com/*"
+            ]
+        }
+    ],
     "background": {
         "service_worker": "./js/background/handleData.js"
     }

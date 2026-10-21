@@ -107,23 +107,25 @@ function renderChats(data) {
 	toggleMethod("togglePin", "isPinned");
 }
 
-storage.get(null, (data) => {
-	themeToggle();
+themeToggle();
+
+// Nothing about the chats is shown or wired up until the popup is unlocked.
+requireUnlock(() => {
 	toggleHiddenAll();
 	showPageHealth();
 	updateData();
-	renderChats(data);
-});
+	storage.get(null, renderChats);
 
-storage.onChanged.addListener(() => {
-	storage.get(null, (data) => {
-		// Forget chats that have no feature turned on any more. Saving triggers this listener again, so only
-		// save when something was removed.
-		const kept = data.messengerChats.filter((chat) => chat.isHidden || chat.isPinned || chat.isLocked || chat.isObfuscated);
-		if (kept.length !== data.messengerChats.length) {
-			data.messengerChats = kept;
-			storage.set(data);
-		}
-		renderChats(data);
+	storage.onChanged.addListener(() => {
+		storage.get(null, (data) => {
+			// Forget chats that have no feature turned on any more. Saving triggers this listener again, so only
+			// save when something was removed.
+			const kept = data.messengerChats.filter((chat) => chat.isHidden || chat.isPinned || chat.isLocked || chat.isObfuscated);
+			if (kept.length !== data.messengerChats.length) {
+				data.messengerChats = kept;
+				storage.set(data);
+			}
+			renderChats(data);
+		});
 	});
 });
