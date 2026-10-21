@@ -4,10 +4,14 @@ Goal: HideMeChat works the same on **facebook.com/messages**, **messenger.com** 
 
 ## 1. Get readable source back
 
+Done in `6d19b28`.
+
 - If the original v2 source still exists somewhere, start from it. If not, unminify the current files into readable modules and keep their behaviour exactly the same at first.
 - Stay with plain JS and no build step, to keep the extension small and simple to load unpacked.
 
 ## 2. One place that understands the page
+
+Done: `js/content/page.js` (`Page`) finds every container, the features ask it instead of querying the page, and the popup shows a warning when the open Messenger tab is missing parts. The anchors it uses are listed in `findings-2026-10.md`.
 
 - Make one "where am I" layer that decides which page it's on from the URL: Messages on facebook.com, messenger.com, or a normal Facebook page that may have pop-ups or the Messenger dropdown open.
 - Each feature asks this layer for the chat list, the current chat, its message list or the conversation area, and never queries the page directly.

@@ -29,6 +29,7 @@
         {
             "js": [
                 "./js/content/utilities.js",
+                "./js/content/page.js",
                 "./js/content/hide.js",
                 "./js/content/pin.js",
                 "./js/content/lock.js",

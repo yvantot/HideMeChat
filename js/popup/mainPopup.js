@@ -76,6 +76,22 @@ function toggleHiddenAll() {
 	});
 }
 
+// Warns when the active Messenger tab can't find parts of the page that HideMeChat needs.
+function showPageHealth() {
+	const partNames = { chatList: "chat list", conversation: "open chat", messageList: "messages" };
+	chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+		if (!tabs[0]?.url || !isValidLink(tabs[0].url)) return;
+		chrome.tabs.sendMessage(tabs[0].id, { message: "health" }, (health) => {
+			// No answer means the content scripts aren't running in that tab yet, e.g. it was opened before install.
+			if (chrome.runtime.lastError || !health || health.ok) return;
+			const missing = health.missing.map((part) => partNames[part] ?? part).join(", ");
+			const warning = document.getElementById("page-health");
+			warning.textContent = `HideMeChat can't find the ${missing} on this page. Messenger may have changed its layout, so some features may not work until HideMeChat is updated.`;
+			warning.classList.remove("hidden");
+		});
+	});
+}
+
 function getDaySince(date) {
 	return (new Date(getDateNow()) - new Date(date)) / 86400000;
 }
@@ -92,6 +108,7 @@ function renderChats(data) {
 storage.get(null, (data) => {
 	themeToggle();
 	toggleHiddenAll();
+	showPageHealth();
 	updateData();
 	renderChats(data);
 });

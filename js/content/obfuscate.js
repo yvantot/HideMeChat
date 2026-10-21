@@ -11,8 +11,8 @@ function makeObfInject(chats) {
 		if (obfIntervalChatLeft) clearInterval(obfIntervalChatLeft);
 		obfIntervalChatLeft = setInterval(() => markChatList(obfuscatedUrls), 1000);
 
-		if (isMessenger) {
-			let messageList = document.querySelector(SELECTORS.MESSAGECONTAINER);
+		if (Page.isMessagesPage()) {
+			let messageList = Page.messageList();
 			const markMessages = () => {
 				obfRuleModifyAttr();
 				injectMessagesAttr(obfuscatedUrls.has(getCurrentChat()) ? "true" : "false", messageList);
@@ -21,7 +21,7 @@ function makeObfInject(chats) {
 			if (obfInterval) clearInterval(obfInterval);
 			if (obfTimeout) clearTimeout(obfTimeout);
 			obfInterval = setInterval(() => {
-				if (!messageList) messageList = document.querySelector(SELECTORS.MESSAGECONTAINER);
+				if (!messageList) messageList = Page.messageList();
 				if (messageList) markMessages();
 			}, 500);
 
@@ -36,7 +36,7 @@ function makeObfInject(chats) {
 			if (obfInterval) clearInterval(obfInterval);
 			if (obfTimeout) clearTimeout(obfTimeout);
 			obfInterval = setInterval(() => {
-				const messageLists = document.querySelectorAll(SELECTORS.MESSAGECONTAINER);
+				const messageLists = Page.messageLists();
 				obfRuleModifyAttr();
 				// v2 bug, kept for now: every chat pop-up is obfuscated, whatever its own setting.
 				for (let i = 0; i < messageLists.length; i++) injectMessagesAttr("true", messageLists[i]);
@@ -45,13 +45,13 @@ function makeObfInject(chats) {
 	}
 
 	whenAvail(
-		() => document.querySelector(SELECTORS.MESSAGECONTAINER),
+		() => Page.messageLists().length > 0,
 		() => startObfuscating()
 	);
 }
 
 function markChatList(obfuscatedUrls) {
-	const chatList = document.querySelector(SELECTORS.CHATCONTAINER);
+	const chatList = Page.chatList();
 	if (!chatList) return;
 	const rows = chatList.children;
 
@@ -107,9 +107,9 @@ function obfRuleModifyAttr() {
 
 function onMessageChange(callback) {
 	whenAvail(
-		() => document.querySelector(`${SELECTORS.MESSAGECONTAINER}`),
+		() => Page.messageList(),
 		() => {
-			const messageList = document.querySelector(`${SELECTORS.MESSAGECONTAINER}`);
+			const messageList = Page.messageList();
 			if (obfObserver) obfObserver.disconnect();
 			obfObserver = new MutationObserver(() => setTimeout(() => callback(), 2000));
 			obfObserver.observe(messageList, { childList: true });

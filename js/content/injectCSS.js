@@ -33,11 +33,6 @@ chrome.storage.onChanged.addListener(() => {
 });
 
 onUrlChanged(() => {
-	isMessenger =
-		location.origin.includes("https://www.messenger.com") ||
-		location.href.includes("https://www.facebook.com/messages");
-	isFacebook = location.origin.includes("https://www.facebook.com");
-
 	storage.get(null, (data) => {
 		makeLockedInject(data);
 		makeObfInject(data.messengerChats);
@@ -56,6 +51,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		case "toggleHiddenAll":
 			storage.get(null, (data) => toggleHide(data.messengerChats, "hidechat-hiddentoggle"));
 			break;
+		case "health":
+			sendResponse(Page.health());
+			return true;
 		default:
 			break;
 	}

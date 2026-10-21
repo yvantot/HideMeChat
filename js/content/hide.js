@@ -25,9 +25,7 @@ function makeHideCSS(chats, styleId, declaration) {
 
 	let selectors = "";
 	chats.forEach((chat) => {
-		if (chat.isHidden) {
-			selectors += `${SELECTORS.CHATCONTAINER} a[href='${isFacebook ? "/messages" : ""}${chat.chatURL}'],`;
-		}
+		if (chat.isHidden) selectors += `${Page.chatLinkSelector(chat.chatURL)},`;
 	});
 	// Drop the trailing comma before adding the declaration block.
 	style.innerHTML = selectors.slice(0, -1) + declaration;

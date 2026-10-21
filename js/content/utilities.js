@@ -1,14 +1,7 @@
 const storage = chrome.storage.local;
 
-let isMessenger =
-	location.origin.includes("https://www.messenger.com") || location.href.includes("https://www.facebook.com/messages");
-let isFacebook = location.origin.includes("https://www.facebook.com");
-
+// Parts inside chat rows and messages. The containers themselves are found by Page (page.js).
 const SELECTORS = {
-	CHATCONTAINER: "div[class='x1n2onr6']",
-	MESSAGECONTAINER: "div[class='x78zum5 xdt5ytf x1iyjqo2 x2lah0s xl56j7k x121v3j4']",
-	INBOXDETAIL: "div[class='x78zum5 xdt5ytf x1iyjqo2 xs83m0k x1n2onr6']",
-	INBOXDETAILRIGHT: "div[class='x78zum5 x5yr21d xmz0i5r']",
 	VIRTUALIZED: "div[data-virtualized='false']",
 	MESSAGEROW: "div[data-scope='messages_table']",
 	CHATLINK: "a",
@@ -24,9 +17,7 @@ const SELECTORS = {
 
 // Returns the details of every chat currently rendered in the chat list, or null if there are none.
 function getAllChat() {
-	const chatLinks = document.querySelectorAll(
-		`${SELECTORS.CHATCONTAINER} ${SELECTORS.VIRTUALIZED} ${SELECTORS.CHATLINK}`
-	);
+	const chatLinks = Page.chatList()?.querySelectorAll(`${SELECTORS.VIRTUALIZED} ${SELECTORS.CHATLINK}`);
 	if (!chatLinks) return null;
 
 	const chats = [];
@@ -48,9 +39,7 @@ function getChatInfo(chatLink) {
 }
 
 function getChatByUrl(url) {
-	const chatLink = document.querySelector(
-		`${SELECTORS.CHATCONTAINER} a[href="${isFacebook ? "/messages" : ""}${getChatId(url)}"]`
-	);
+	const chatLink = Page.findChatLink(getChatId(url));
 	if (chatLink) return chatLink;
 }
 

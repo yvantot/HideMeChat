@@ -86,6 +86,26 @@ These are the same on facebook.com/messages and messenger.com, and all of them s
 
 `aria-label` values change with the user's language, so they're no good as anchors.
 
+### What `page.js` uses (step 2, checked live)
+
+| Part | How it's found | Fallback |
+|---|---|---|
+| Chat list | Parent of the `[data-virtualized]` rows in a `[role="grid"]`, preferring a grid outside `[role="dialog"]` (on the Facebook home page, the grid is the Messenger dropdown) | Old class, only if it contains a chat link |
+| Conversation | `[role="main"]` containing a `[role="log"]` (same width as the old element, starts 16 px higher) | Old class |
+| Message list | Lowest element containing the first and last `messages_table` row in the log (the same element as v2's) | Old class |
+| Info panel | No landmark. It's the large sibling beside the log's column, found by layout (same box as v2's) | Old class |
+| Pop-ups | Every `[role="log"]` on the page | — |
+
+- On the live page, the anchors found every part on facebook.com/messages and messenger.com; no fallbacks were needed.
+- The lock screen now marks what it hides with `data-hc-lock-*` attributes instead of overwriting `style`.
+
+### Pop-up chat identity (for step 4)
+
+A pop-up has no `/messages/t/` link anywhere in its ancestors. What it does have:
+- A header link to `/<numeric id>/`, which is probably the other person's profile. For 1:1 chats that may match the `/t/<id>/` thread id, but not for encrypted chats or groups.
+- `data-mw-file-dropzone` on the chat window.
+- `data-message-id` on messages.
+
 ## Not tested
 
 - Stickers, videos, voice messages.

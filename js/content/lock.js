@@ -47,15 +47,15 @@ function lockChat(data) {
 	setPassword(data);
 	if (document.getElementById("hc-lockedmain")) return;
 
-	const inbox = document.querySelector(SELECTORS.INBOXDETAIL);
-	const messages = document.querySelector(SELECTORS.MESSAGECONTAINER);
-	const infoPanel = document.querySelector(SELECTORS.INBOXDETAILRIGHT);
-	messages?.setAttribute("style", "display: none !important;");
-	infoPanel?.setAttribute("style", "display: none !important;");
+	// The lock screen is see-through, so the messages and info panel behind it are hidden too.
+	// Marking them with attributes (styled in lockedUICSS) leaves the page's own inline styles alone.
+	const conversation = Page.conversation();
+	Page.messageList()?.setAttribute("data-hc-lock-hidden", "");
+	Page.infoPanel()?.setAttribute("data-hc-lock-hidden", "");
 
 	const lockScreen = lockedUIHTML();
-	inbox?.setAttribute("style", "position: relative !important;");
-	inbox?.insertBefore(lockScreen, inbox.firstChild);
+	conversation?.setAttribute("data-hc-lock-host", "");
+	conversation?.insertBefore(lockScreen, conversation.firstChild);
 
 	const unlockButton = lockScreen.querySelector("#hc-unlockpass");
 	const passwordInput = lockScreen.querySelector("#hc-lockedpass");
@@ -77,15 +77,20 @@ function unlockChat() {
 	const lockScreen = document.getElementById("hc-lockedmain");
 	if (!lockScreen) return;
 	lockScreen.remove();
-	document.querySelector(SELECTORS.INBOXDETAIL)?.removeAttribute("style");
-	document.querySelector(SELECTORS.MESSAGECONTAINER)?.removeAttribute("style");
-	document.querySelector(SELECTORS.INBOXDETAILRIGHT)?.removeAttribute("style");
+	document.querySelectorAll("[data-hc-lock-host]").forEach((el) => el.removeAttribute("data-hc-lock-host"));
+	document.querySelectorAll("[data-hc-lock-hidden]").forEach((el) => el.removeAttribute("data-hc-lock-hidden"));
 }
 
 function lockedUICSS() {
 	const style = document.createElement("style");
 	style.setAttribute("id", "hidechat-lockedchat");
 	style.innerHTML = `
+		[data-hc-lock-host] {
+			position: relative !important;
+		}
+		[data-hc-lock-hidden] {
+			display: none !important;
+		}
 		#hc-lockedmain {
 			position: absolute;
 			inset: 0;
