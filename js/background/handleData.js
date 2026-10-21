@@ -104,9 +104,12 @@ function upsertChat(data, knownUrls, chat, flag) {
 }
 
 // Asks the page for the details of the right-clicked chat, then turns `flag` on for it.
+// Nothing happens if the page can't find the chat (for example a chat link outside the chat list).
 function flagClickedChat(linkUrl, flag) {
 	chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+		if (!tabs[0]) return;
 		chrome.tabs.sendMessage(tabs[0].id, { message: "getThisChat", clickedChat: linkUrl }, null, (chat) => {
+			if (chrome.runtime.lastError || !chat) return;
 			storage.get(null, (data) => {
 				const knownUrls = new Set(data.messengerChats.map((stored) => stored.chatURL));
 				upsertChat(data, knownUrls, chat, flag);
@@ -119,7 +122,9 @@ function flagClickedChat(linkUrl, flag) {
 // Hides every chat in the list except the right-clicked one.
 function hideAllChatsExcept(linkUrl) {
 	chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+		if (!tabs[0]) return;
 		chrome.tabs.sendMessage(tabs[0].id, { message: "getAllChat" }, null, (chats) => {
+			if (chrome.runtime.lastError || !Array.isArray(chats)) return;
 			storage.get(null, (data) => {
 				const knownUrls = new Set(data.messengerChats.map((stored) => stored.chatURL));
 				const keptUrl = linkUrl
@@ -138,11 +143,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	switch (request.message) {
 		case "updateChats":
 			chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-				if (tabs[0]?.url.includes("https://www.facebook.com") || tabs[0]?.url.includes("https://www.messenger.com")) {
-					chrome.tabs.sendMessage(tabs[0].id, { message: "getAllChat" }, (chats) => {
-						sendResponse(chats);
-					});
+				const url = tabs[0]?.url ?? "";
+				if (!url.includes("https://www.facebook.com") && !url.includes("https://www.messenger.com")) {
+					sendResponse(null);
+					return;
 				}
+				chrome.tabs.sendMessage(tabs[0].id, { message: "getAllChat" }, (chats) => {
+					sendResponse(chrome.runtime.lastError ? null : chats);
+				});
 			});
 			return true;
 		default:
@@ -152,7 +160,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 chrome.runtime.onInstalled.addListener(() => {
 	initStorage();
-	createContexts();
+	// onInstalled also runs on updates, when the menu items from the old version may still exist.
+	chrome.contextMenus.removeAll(() => createContexts());
 });
 
 chrome.contextMenus.onClicked.addListener((info) => {

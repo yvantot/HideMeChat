@@ -34,7 +34,7 @@
                 "./js/content/pin.js",
                 "./js/content/lock.js",
                 "./js/content/obfuscate.js",
-                "./js/content/injectCSS.js"
+                "./js/content/main.js"
             ],
             "matches": [
                 "*://www.messenger.com/*",

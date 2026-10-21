@@ -7,12 +7,8 @@ const SELECTORS = {
 	CHATLINK: "a",
 	TEXT: "div[dir='auto']",
 	TEXTSPAN: "span[dir='auto']",
-	TEXTSPANHIDDEN: "span[aria-hidden='true']",
 	STICKERS: "div[role='img']",
 	REPLYTEXT: "div[class='xi81zsa x126k92a']",
-	VIDEO: "video",
-	AIMG: "a > img",
-	DIVIMG: "div > img",
 };
 
 // Returns the details of every chat currently rendered in the chat list, or null if there are none.
@@ -29,25 +25,36 @@ function getAllChat() {
 }
 
 function getChatInfo(chatLink) {
-	const url = getChatId(chatLink.href);
-	const img = chatLink.querySelector("img")?.src;
-	const name = chatLink.querySelector(SELECTORS.TEXTSPAN)?.innerText;
-	const lastMsg = chatLink.querySelectorAll(`${SELECTORS.TEXTSPAN} ${SELECTORS.TEXTSPANHIDDEN}`)[1]?.innerText;
-	// v2 bug, kept for now: lastMsg is a const, so this throws a TypeError whenever lastMsg is missing.
-	if (!lastMsg) lastMsg = "#";
-	return { url, img, name, lastMsg };
+	if (!chatLink) return null;
+	return {
+		url: getChatId(chatLink.href),
+		img: chatLink.querySelector("img")?.src,
+		name: chatLink.querySelector(SELECTORS.TEXTSPAN)?.innerText,
+		lastMsg: getLastMessageTime(chatLink) || "#",
+	};
+}
+
+// The time shown after the "·" separator in a chat row, e.g. "3h". Some rows show a prompt such as
+// "Follow up?" there instead, so only text with a number counts.
+function getLastMessageTime(chatLink) {
+	const texts = [...chatLink.querySelectorAll("span")].filter(
+		(span) => span.children.length === 0 && span.textContent.trim()
+	);
+	const separator = texts.findIndex(
+		(span) => span.textContent.trim() === "·" && span.closest("[aria-hidden='true']")
+	);
+	const time = separator === -1 ? undefined : texts[separator + 1]?.textContent.trim();
+	return /\d/.test(time ?? "") ? time : undefined;
 }
 
 function getChatByUrl(url) {
-	const chatLink = Page.findChatLink(getChatId(url));
-	if (chatLink) return chatLink;
+	return Page.findChatLink(getChatId(url));
 }
 
 // The id of the open chat, with a trailing slash so it matches the stored chat URLs.
 function getCurrentChat() {
-	const chars = Array.from(location.href);
-	if (chars[location.href.length - 1] !== "/") chars[location.href.length] = "/";
-	return getChatId(chars.join(""));
+	const path = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
+	return getChatId(location.origin + path);
 }
 
 // Turns a full chat URL into the id stored for it, e.g. "/t/123/" or "/e2ee/t/123/".
@@ -60,38 +67,29 @@ function getChatId(url) {
 		.replace("/marketplace", "");
 }
 
-// Polls `check` until it returns something truthy, then runs `callback` once. Gives up after `timeout` seconds.
-function whenAvail(check, callback, options = { interval: 0.5, timeout: 60 }) {
-	const { interval, timeout } = options;
-	let waiting = true;
-
-	const poll = setInterval(() => {
-		if (check()) {
-			clearInterval(poll);
-			waiting = false;
-			callback();
-		}
-	}, interval * 1000);
-
-	setTimeout(() => {
-		if (waiting) clearInterval(poll);
-	}, timeout * 1000);
-}
-
-function onUrlChanged(callback) {
-	let lastUrl = location.href;
-	setInterval(() => {
-		if (location.href !== lastUrl) {
-			callback();
-			lastUrl = location.href;
-		}
-	}, 500);
-}
-
 function hexToRgb(hex) {
 	hex = hex.replace("#", "");
 	const red = parseInt(hex.substring(0, 2), 16);
 	const green = parseInt(hex.substring(2, 4), 16);
 	const blue = parseInt(hex.substring(4, 6), 16);
 	return `rgb(${red}, ${green}, ${blue})`;
+}
+
+// Adds or removes a boolean attribute, touching the element only when it changes.
+function setFlag(element, name, on) {
+	if (element.hasAttribute(name) !== on) {
+		if (on) element.setAttribute(name, "");
+		else element.removeAttribute(name);
+	}
+}
+
+// Replaces the text of one of HideMeChat's stylesheets, creating it if needed.
+function setStyle(id, css) {
+	let style = document.getElementById(id);
+	if (!style) {
+		style = document.createElement("style");
+		style.setAttribute("id", id);
+		(document.head || document.documentElement).appendChild(style);
+	}
+	if (style.textContent !== css) style.textContent = css;
 }

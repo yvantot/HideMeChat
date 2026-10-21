@@ -44,18 +44,26 @@ function initObfData(data) {
 	pinnedColor.value = data.preferences.pinnedColor;
 }
 
-// v2 bug, kept for now: the handlers below save the data read when the page opened, so they can overwrite
-// changes made elsewhere since then.
+// Reads the latest stored data, applies `change` to it and saves it, so a save never undoes changes made
+// elsewhere (in another tab, or by the right-click menu) since this page opened.
+function updateStored(change) {
+	storage.get(null, (data) => {
+		change(data);
+		storage.set(data);
+	});
+}
+
 storage.get(null, (data) => {
 	themeToggle();
 	initObfData(data);
 
 	setObfuscate.addEventListener("click", () => {
-		data.preferences.obfMethod.text = getCheckedMethods(textCheckboxes);
-		data.preferences.obfMethod.image = getCheckedMethods(mediaCheckboxes);
-		data.preferences.obfMethod.blurIntensity = blurRange.value;
-		data.preferences.obfMethod.brightnessIntensity = opacityRange.value;
-		storage.set(data);
+		updateStored((latest) => {
+			latest.preferences.obfMethod.text = getCheckedMethods(textCheckboxes);
+			latest.preferences.obfMethod.image = getCheckedMethods(mediaCheckboxes);
+			latest.preferences.obfMethod.blurIntensity = blurRange.value;
+			latest.preferences.obfMethod.brightnessIntensity = opacityRange.value;
+		});
 	});
 
 	resetObfuscate.addEventListener("click", () => {
@@ -81,7 +89,7 @@ storage.get(null, (data) => {
 	});
 
 	changePassword.addEventListener("click", () => {
-		setPassword(data);
+		setPassword();
 	});
 	changeLanguage.addEventListener("click", () => {
 		alert(
@@ -98,8 +106,9 @@ storage.get(null, (data) => {
 	});
 
 	setColor.addEventListener("click", () => {
-		data.preferences.pinnedColor = pinnedColor.value;
-		storage.set(data);
+		updateStored((latest) => {
+			latest.preferences.pinnedColor = pinnedColor.value;
+		});
 	});
 });
 

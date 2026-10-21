@@ -27,39 +27,34 @@ function toggleMethod(buttonClass, flag) {
 	});
 }
 
-// Changes the password (after checking the old one), or creates one if none is set.
-// v2 bug, kept for now: cancelling the new-password prompt never ends the loop.
-function setPassword(data) {
-	if (data.preferences.userPassword) {
-		if (data.preferences.userPassword === prompt("Type your old password:")) {
-			let password = null;
-			while (!password || password.length < 5) {
-				password = prompt("Enter a new password. The password must be at least 5 characters long:");
-				if (password && password.length >= 5) {
-					data.preferences.userPassword = password;
-					storage.set(data);
-				}
-			}
-		}
-	} else {
-		while (!data.preferences.userPassword || data.preferences.userPassword.length < 5) {
-			let password = data.preferences.userPassword;
-			if (password) {
-				if (password.length < 5) {
-					password = prompt(
-						`Your current password is '${password}'. The password must be at least 5 characters long:`
-					);
-				}
-			} else {
-				password = prompt("You haven't set a password yet. The password must be at least 5 characters long:");
-			}
+// Changes the password (after checking the old one), or creates one if none is set. Cancelling a prompt stops.
+function setPassword() {
+	storage.get(null, (data) => {
+		const current = data.preferences.userPassword;
+		if (current && current !== prompt("Type your old password:")) return;
 
-			if (password && password.length >= 5) {
-				data.preferences.userPassword = password;
-				storage.set(data);
-			}
+		let message = current
+			? "Enter a new password. The password must be at least 5 characters long:"
+			: "You haven't set a password yet. The password must be at least 5 characters long:";
+		let password = prompt(message);
+		while (password !== null && password.length < 5) {
+			message = "The password must be at least 5 characters long:";
+			password = prompt(message);
 		}
-	}
+		if (password === null) return;
+
+		data.preferences.userPassword = password;
+		storage.set(data);
+	});
+}
+
+function escapeHtml(text) {
+	return String(text ?? "")
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
 }
 
 function isValidLink(url) {
@@ -71,37 +66,54 @@ function getDateNow() {
 	return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-// Applies the saved theme and saves the opposite one when the switch is clicked.
-// v2 bug, kept for now: the saved value isn't re-read, so clicking twice saves the same theme twice.
+// Applies the saved theme, and saves the new one each time the switch is clicked.
 function themeToggle() {
 	const themeSwitch = document.getElementById("toggle-theme");
 	storage.get(null, (data) => {
-		const savedTheme = data.preferences.userTheme;
-		if (savedTheme === "dark") {
+		if (data.preferences.userTheme === "dark") {
 			themeSwitch.checked = true;
-			document.documentElement.classList.toggle("dark");
+			document.documentElement.classList.add("dark");
 		}
+	});
 
-		themeSwitch.addEventListener("click", () => {
-			document.documentElement.classList.toggle("dark");
-			data.preferences.userTheme = savedTheme == "dark" ? "light" : "dark";
+	themeSwitch.addEventListener("click", () => {
+		const dark = document.documentElement.classList.toggle("dark");
+		storage.get(null, (data) => {
+			data.preferences.userTheme = dark ? "dark" : "light";
 			storage.set(data);
 		});
 	});
 }
 
+// Base64 of the UTF-8 bytes of `text`, so names in any script survive.
+function encodeExport(text) {
+	const bytes = new TextEncoder().encode(text);
+	let binary = "";
+	bytes.forEach((byte) => (binary += String.fromCharCode(byte)));
+	return btoa(binary);
+}
+
+// Reverses encodeExport. Files exported by v2 hold Latin-1 rather than UTF-8, so fall back to that.
+function decodeExport(base64) {
+	const binary = atob(base64.trim());
+	const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+	try {
+		return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+	} catch {
+		return binary;
+	}
+}
+
 // Downloads all stored data as base64-encoded JSON.
 function exportDataToJson() {
 	storage.get(null, (data) => {
-		const encoded = btoa(JSON.stringify(data, null, 2));
-		const blob = new Blob([encoded], { type: "text/plain" });
+		const blob = new Blob([encodeExport(JSON.stringify(data, null, 2))], { type: "text/plain" });
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;
 		link.download = `hidechat_userdata_${getDateNow()}.txt`;
 		link.click();
-		// v2 bug, kept for now: this should revoke `url`, not the Blob.
-		URL.revokeObjectURL(blob);
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
 	});
 }
 
@@ -113,7 +125,7 @@ function importDataToStorage(file) {
 	};
 	reader.onload = (event) => {
 		try {
-			const data = JSON.parse(atob(event.target.result));
+			const data = JSON.parse(decodeExport(event.target.result));
 			if (typeof data != "object") {
 				alert("Failed: Invalid / corrupted file");
 				return;

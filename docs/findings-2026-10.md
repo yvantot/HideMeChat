@@ -99,12 +99,29 @@ These are the same on facebook.com/messages and messenger.com, and all of them s
 - On the live page, the anchors found every part on facebook.com/messages and messenger.com; no fallbacks were needed.
 - The lock screen now marks what it hides with `data-hc-lock-*` attributes instead of overwriting `style`.
 
-### Pop-up chat identity (for step 4)
+### Status after steps 3 and 4
+
+- **Fixed:**
+  - Bugs 1–5 above.
+  - Everything in "Bugs found by reading the code" except the plain-text password and the unprotected popup, which are step 5.
+  - The lock no longer traps you in a prompt loop. With no password set, the lock screen asks you to set one in the settings.
+- **Pop-ups:** they now follow each chat's own obfuscate setting, matched by the chat name in their header (see below).
+- **Info panel:** `page.js` no longer looks for it. While locked, everything in `[role="main"]` except the lock screen is hidden with `visibility: hidden`, which covers the panel and keeps the layout's size.
+
+### Pop-up chat identity
 
 A pop-up has no `/messages/t/` link anywhere in its ancestors. What it does have:
 - A header link to `/<numeric id>/`, which is probably the other person's profile. For 1:1 chats that may match the `/t/<id>/` thread id, but not for encrypted chats or groups.
 - `data-mw-file-dropzone` on the chat window.
 - `data-message-id` on messages.
+
+Checked live for one encrypted chat and two group chats:
+- The header link didn't match the thread id in any of them. The encrypted chat's link points to the person's profile, and the group pop-ups had no link.
+- The pop-up's title, the first `h2` above its log inside the chat window, was exactly the chat's name as shown in the chat list, which is what HideMeChat stores as `chatName`.
+
+So pop-ups are matched by title:
+- Two chats with the same name are both treated as obfuscated if either is (this errs on the private side).
+- Renamed chats match again once the popup refreshes the stored names.
 
 ## Not tested
 

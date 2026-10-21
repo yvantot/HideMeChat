@@ -20,12 +20,19 @@ Done: `js/content/page.js` (`Page`) finds every container, the features ask it i
 
 ## 3. React to changes instead of polling
 
+Done: `js/content/main.js` keeps the page in line with the stored settings using one `MutationObserver` and no timers.
+- Hide, pin (highlight and order) and obfuscation are stylesheet rules.
+- JS only marks things CSS can't find on its own: chat lists, which open chats are obfuscated, @ rules, and the lock.
+- Pinned chats are moved with CSS `order` rather than by moving Facebook's elements.
+
 - Replace the many intervals with one observer on the page and one way of detecting URL changes. Each update re-applies the current state from scratch.
 - Never keep an element between updates. Look it up fresh each time, because Messenger replaces the conversation area when you switch chats.
 - Move as much as possible into CSS: set the current chat's state as an attribute on `<html>` and let stylesheet rules do the hiding and obfuscating. Fewer moving parts means fewer timing bugs.
 - Do nothing on Facebook pages that don't have chats on screen.
 
 ## 4. Fix the confirmed bugs
+
+Done, along with every bug in the findings' code-review list except the lock's password handling (step 5). Pop-ups turned out to have no chat link, so they're matched by the chat name in their header instead.
 
 - Pop-up chats follow each chat's own obfuscate setting. A pop-up is identified by the chat link in its header.
 - Pin works through the observer, and on the Facebook home page only inside the dropdown.
