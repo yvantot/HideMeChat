@@ -1,0 +1,292 @@
+/* Shared look of the store screenshots and promo tiles: a headline, a plain chat page standing in for Messenger
+   (no Messenger branding), and the real popup and lock screen in frames. */
+@font-face {
+	font-family: "Quicksand";
+	font-weight: 300 700;
+	src: url("../../fonts/quicksand-latin.woff2") format("woff2");
+}
+
+:root {
+	--accent: #5b67e8;
+	--violet: #7c4fe2;
+	--ink: #1d2130;
+	--muted: #6b7183;
+	--line: #eceef4;
+	--soft: #f0f1f6;
+	--pinned: #e2e5ff;
+}
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	width: 1280px;
+	height: 800px;
+	margin: 0;
+	overflow: hidden;
+}
+body {
+	position: relative;
+	color: var(--ink);
+	font: 500 16px/1.45 "Quicksand", system-ui, sans-serif;
+	background:
+		radial-gradient(900px 560px at 12% -10%, #e2e6ff 0%, transparent 65%),
+		radial-gradient(800px 560px at 105% 110%, #eee3ff 0%, transparent 65%),
+		#f5f6fb;
+}
+
+/* ---------- headline ---------- */
+.headline {
+	position: absolute;
+	top: 44px;
+	right: 0;
+	left: 0;
+	text-align: center;
+}
+.headline h1 {
+	margin: 0;
+	font-size: 44px;
+	font-weight: 700;
+	letter-spacing: -0.4px;
+}
+.headline p {
+	margin: 8px 0 0;
+	color: var(--muted);
+	font-size: 21px;
+}
+
+/* ---------- a browser window with a chat page ---------- */
+.window {
+	position: absolute;
+	overflow: hidden;
+	border-radius: 18px;
+	background: #fff;
+	box-shadow: 0 30px 80px rgba(30, 34, 80, 0.16), 0 2px 6px rgba(30, 34, 80, 0.06);
+}
+.window .bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 16px;
+	background: #eef0f6;
+}
+.window .bar i {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: #d6d9e4;
+}
+.window .bar .address {
+	width: 340px;
+	height: 24px;
+	margin-left: 18px;
+	border-radius: 999px;
+	background: #fff;
+}
+.window .bar .extension {
+	margin-left: auto;
+	width: 22px;
+	height: 22px;
+	border-radius: 6px;
+	background: #fff url("../../assets/hidechat_icon32.png") center / 16px no-repeat;
+}
+.window .bar .extension.open {
+	box-shadow: 0 0 0 3px #d9ddff;
+}
+.app {
+	display: flex;
+	height: calc(100% - 40px);
+}
+.sidebar {
+	flex: none;
+	width: 320px;
+	padding: 16px 10px;
+	border-right: 1px solid var(--line);
+}
+.sidebar h2 {
+	margin: 2px 10px 12px;
+	font-size: 23px;
+}
+.search {
+	height: 36px;
+	margin: 0 10px 10px;
+	border-radius: 999px;
+	background: var(--soft);
+}
+.row {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 9px 10px;
+	border-radius: 14px;
+}
+.row.active {
+	background: var(--soft);
+}
+.row.pinned {
+	background: var(--pinned);
+}
+.row .text {
+	min-width: 0;
+	flex: 1;
+}
+.row .name {
+	font-weight: 700;
+}
+.row .preview {
+	overflow: hidden;
+	color: var(--muted);
+	font-size: 14px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.row .tag {
+	flex: none;
+	width: 18px;
+	height: 18px;
+	color: var(--accent);
+}
+.av {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	color: #fff;
+	font-size: 18px;
+	font-weight: 700;
+}
+.av.small {
+	width: 40px;
+	height: 40px;
+	font-size: 16px;
+}
+.c1 { background: #f29a87; }
+.c2 { background: #6fc29c; }
+.c3 { background: #8b9cff; }
+.c4 { background: #f2b766; }
+.c5 { background: #be95f0; }
+.c6 { background: #63bcd4; }
+
+.main {
+	position: relative;
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-width: 0;
+}
+.header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 20px;
+	border-bottom: 1px solid var(--line);
+}
+.header .name {
+	font-size: 18px;
+	font-weight: 700;
+}
+.header .status {
+	color: var(--muted);
+	font-size: 13px;
+}
+.messages {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 10px;
+	padding: 22px 28px;
+}
+.msg {
+	max-width: 62%;
+	padding: 10px 16px;
+	border-radius: 20px;
+	background: var(--soft);
+}
+.msg.me {
+	align-self: flex-end;
+	background: var(--accent);
+	color: #fff;
+}
+.photo-frame {
+	overflow: hidden;
+	width: 230px;
+	height: 150px;
+	border-radius: 18px;
+}
+.photo {
+	width: 230px;
+	height: 150px;
+	background:
+		radial-gradient(60px 60px at 70% 30%, #ffe08a 0 40%, transparent 41%),
+		linear-gradient(170deg, #9fd3ff 0%, #c9e8ff 50%, #7cc58f 51%, #4f9e68 100%);
+}
+.composer {
+	height: 42px;
+	margin: 12px 20px 18px;
+	border-radius: 999px;
+	background: var(--soft);
+}
+
+/* ---------- Hide Me Chat's effects, as in js/content/obfuscate.js ---------- */
+.blur {
+	filter: blur(4.5px);
+}
+.pixel {
+	filter: blur(2px) url("#pixelate");
+}
+.redact {
+	position: relative;
+}
+.redact::after {
+	content: "";
+	position: absolute;
+	inset: -2px;
+	border-radius: 6px;
+	background: #000;
+}
+.msg.redact::after {
+	inset: 0;
+	border-radius: 20px;
+}
+
+/* ---------- frames for the real extension pages ---------- */
+iframe.popup {
+	position: absolute;
+	width: 360px;
+	border: none;
+	border-radius: 14px;
+	background: #f3f4f8;
+	box-shadow: 0 26px 70px rgba(30, 34, 80, 0.26), 0 2px 8px rgba(30, 34, 80, 0.08);
+}
+iframe.popup.dark {
+	background: #13151b;
+	color-scheme: dark;
+}
+.lock-cover {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(18, 20, 30, 0.42);
+	backdrop-filter: blur(18px);
+}
+.lock-cover iframe {
+	width: 300px;
+	height: 251px;
+	border: none;
+	border-radius: 20px;
+	background: transparent;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+	color-scheme: light;
+}
+.cursor {
+	position: absolute;
+	width: 26px;
+	height: 26px;
+	filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}

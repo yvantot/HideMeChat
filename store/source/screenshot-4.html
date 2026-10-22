@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" href="scenes.css" />
+	<style>
+		/* Chrome's right-click menu */
+		.menu {
+			position: absolute;
+			padding: 6px 0;
+			border-radius: 8px;
+			background: #fff;
+			box-shadow: 0 8px 28px rgba(20, 24, 50, 0.22), 0 0 0 1px rgba(20, 24, 50, 0.06);
+			font: 400 14px/1 "Segoe UI", system-ui, sans-serif;
+			color: #202124;
+		}
+		.menu div {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			height: 32px;
+			padding: 0 16px 0 14px;
+			white-space: nowrap;
+		}
+		.menu .on {
+			background: #e8eaf6;
+		}
+		.menu hr {
+			margin: 6px 0;
+			border: none;
+			border-top: 1px solid #e3e5ea;
+		}
+		.menu img {
+			width: 16px;
+			height: 16px;
+		}
+		.menu .spacer {
+			width: 16px;
+		}
+		.menu .arrow {
+			margin-left: auto;
+			padding-left: 24px;
+			color: #5f6368;
+		}
+	</style>
+</head>
+<body>
+	<div class="headline">
+		<h1>Right-click any chat to start</h1>
+		<p>Hide it, pin it to the top, obfuscate it or lock it</p>
+	</div>
+
+	<div class="window" style="left: 140px; top: 176px; width: 1000px; height: 600px">
+		<div class="bar"><i></i><i></i><i></i><span class="address"></span><span class="extension"></span></div>
+		<div class="app">
+			<div class="sidebar">
+				<h2>Chats</h2>
+				<div class="search"></div>
+				<div class="row pinned">
+					<span class="av c1">M</span>
+					<div class="text"><div class="name">Mom</div><div class="preview">Call me when you're home · 2m</div></div>
+					<svg class="tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16v6M8 3h8l-1 6 3 3v2H6v-2l3-3z" /></svg>
+				</div>
+				<div class="row pinned">
+					<span class="av c2">B</span>
+					<div class="text"><div class="name">Book club</div><div class="preview">Chapter 4 for Friday · 1h</div></div>
+					<svg class="tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16v6M8 3h8l-1 6 3 3v2H6v-2l3-3z" /></svg>
+				</div>
+				<div class="row active">
+					<span class="av c6">S</span>
+					<div class="text"><div class="name">Sam Lee</div><div class="preview">Thanks! · 3h</div></div>
+				</div>
+				<div class="row">
+					<span class="av c5">J</span>
+					<div class="text"><div class="name">Jordan</div><div class="preview">Sounds good · 1d</div></div>
+				</div>
+				<div class="row">
+					<span class="av c2">P</span>
+					<div class="text"><div class="name">Priya</div><div class="preview">Happy birthday! · 2d</div></div>
+				</div>
+				<div class="row">
+					<span class="av c4">T</span>
+					<div class="text"><div class="name">Tom</div><div class="preview">On my way · 3d</div></div>
+				</div>
+			</div>
+			<div class="main">
+				<div class="header">
+					<span class="av small c6">S</span>
+					<div><div class="name">Sam Lee</div><div class="status">Active 3h ago</div></div>
+				</div>
+				<div class="messages">
+					<div class="msg">Here's the link I mentioned</div>
+					<div class="msg me">Got it, thanks!</div>
+				</div>
+				<div class="composer"></div>
+			</div>
+		</div>
+	</div>
+
+	<div class="menu" style="left: 330px; top: 448px; width: 250px">
+		<div><span class="spacer"></span>Open link in new tab</div>
+		<div><span class="spacer"></span>Open link in new window</div>
+		<div><span class="spacer"></span>Copy link address</div>
+		<hr />
+		<div class="on"><img src="../../assets/hidechat_icon32.png" alt="" />Hide Me Chat<span class="arrow">›</span></div>
+		<hr />
+		<div><span class="spacer"></span>Inspect</div>
+	</div>
+	<div class="menu" style="left: 576px; top: 522px; width: 230px">
+		<div class="on">Hide this chat</div>
+		<div>Hide all other chats</div>
+		<div>Pin this chat</div>
+		<div>Obfuscate this chat</div>
+		<div>Lock this chat</div>
+	</div>
+	<svg class="cursor" viewBox="0 0 24 24" style="left: 690px; top: 534px">
+		<path d="M5 3l14 8-6.2 1.8L10 19z" fill="#fff" stroke="#1d2130" stroke-width="1.6" stroke-linejoin="round" />
+	</svg>
+</body>
+</html>

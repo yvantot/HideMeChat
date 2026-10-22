@@ -1,0 +1,36 @@
+/* The promo tiles: the logo on a white badge and the name, on a saturated gradient (the store shows tiles on light
+   gray, so they shouldn't be light themselves). */
+body.promo {
+	color: #fff;
+	background:
+		radial-gradient(70% 90% at 0% 0%, rgba(255, 255, 255, 0.18) 0%, transparent 60%),
+		linear-gradient(125deg, #5d6cf0 0%, #6a55e6 55%, #8146d8 100%);
+}
+.badge {
+	position: absolute;
+	display: grid;
+	place-items: center;
+	background: #fff;
+	box-shadow: 0 18px 40px rgba(20, 10, 70, 0.3);
+}
+.brand {
+	position: absolute;
+}
+.brand h1 {
+	margin: 0;
+	font-weight: 700;
+	letter-spacing: -0.5px;
+	line-height: 1.1;
+}
+.brand p {
+	margin: 8px 0 0;
+	color: rgba(255, 255, 255, 0.85);
+	font-weight: 600;
+}
+.pill {
+	position: absolute;
+	height: 34px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.14);
+	filter: blur(1px);
+}

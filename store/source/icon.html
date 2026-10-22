@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<style>
+		html,
+		body {
+			margin: 0;
+			background: transparent;
+		}
+		img {
+			position: fixed;
+			top: 0;
+			left: 0;
+		}
+	</style>
+</head>
+<body>
+	<!-- The logo at an exact size in the top-left corner, for render.py to crop: icon.html?size=48 -->
+	<img id="logo" src="../../assets/logo.svg" alt="" />
+	<script>
+		const size = new URLSearchParams(location.search).get("size");
+		const logo = document.getElementById("logo");
+		logo.width = logo.height = Number(size);
+	</script>
+</body>
+</html>

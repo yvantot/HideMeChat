@@ -1,0 +1,2 @@
+# Upload packages for the Chrome Web Store, built from the committed files (docs/release-checklist.md).
+*.zip
