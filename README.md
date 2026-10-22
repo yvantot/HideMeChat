@@ -14,7 +14,11 @@ Hide Me Chat, previously Hide Chat, is a browser extension that keeps your Messe
 
 📌 **Pin chats**: keep chats at the top of the list, in a color you choose.
 
-🫥 **Obfuscate chats**: blur, pixelate, flip or dim a chat's messages, its preview in the chat list and its Facebook pop-up. Hover a message to read it.
+🫥 **Obfuscate chats**: blur, pixelate, flip, dim or black out a chat's messages and who it's with:
+- **In the chat:** messages, photos, sender names, reply headers, attachments and read receipts.
+- **Around it:** the name and picture in the chat's header, its pinned message, its info panel (including the username), its row in the chat list, and its Facebook pop-up.
+
+Hover over anything to see it clearly.
 
 🔐 **Lock chats**: cover a chat with a password screen. Its messages, its preview in the chat list and its Facebook pop-up stay hidden until you enter the password. The extension's popup and settings ask for the same password. The password is saved as a salted hash, never as text, and the lock form runs in the extension's own frame, so Messenger's page can't read what you type.
 
@@ -25,7 +29,7 @@ Hide Me Chat, previously Hide Chat, is a browser extension that keeps your Messe
 - `@flp` flips it
 - `@dim` dims it
 
-🎨 **Customizable**: choose how text and media are obfuscated, how strong the blur and dim are, and the pinned color. Light and dark themes.
+🎨 **Customizable**: choose how text and media are obfuscated, how strong the blur is, how far to dim (down to invisible), and the pinned color. Light and dark themes.
 
 💾 **Backup**: export your chats and settings to a file and import them again, from any version of Hide Me Chat.
 
@@ -44,7 +48,8 @@ Hide Me Chat, previously Hide Chat, is a browser extension that keeps your Messe
 - Reacts to page changes instead of checking the page several times a second.
 - Pinned chats move to the top without fighting Messenger; Facebook pop-ups follow each chat's own settings.
 - An honest lock: hashed password, a lock form the page can't read, a locked popup, hidden previews and pop-ups, and no more stuck password prompts.
-- A calmer, rounded popup and settings page with light and dark themes and gentle animations. No more remote fonts.
+- Obfuscation covers who a chat is with (header, info panel, pinned message, pop-up), adds a black bar option, and can dim all the way to invisible.
+- A calmer, rounded popup, settings and lock screen with light and dark themes and gentle animations. Settings open inside the popup, without a page load. The Quicksand font is bundled, so nothing loads from remote servers.
 - Exports work with names in any language, and imports accept backups from v1 and v2.
 - Many smaller fixes; see `docs/findings-2026-10.md`.
 
@@ -55,6 +60,7 @@ There's no build step: load the folder with **Load unpacked** in `chrome://exten
 - **Tests:** `node tests/run.js` (Node 20 or newer, no dependencies). They run the real scripts against a small fake DOM and Chrome API, including sanitized captures of the live pages in `tests/fixtures/`.
 - **New page captures:** when Messenger changes its layout, paste `tests/tools/snapshot.js` into the DevTools console on the page. It copies a sanitized capture: no names, messages or ids.
 - **Releasing:** see `docs/release-checklist.md`.
+- **Font:** Quicksand, by The Quicksand Project Authors, under the SIL Open Font License 1.1 (`fonts/Quicksand-OFL.txt`).
 
 <details>
 <summary>v2.0.0 changes</summary>

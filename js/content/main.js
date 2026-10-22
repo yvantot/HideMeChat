@@ -37,7 +37,7 @@ function load() {
 load();
 chrome.storage.onChanged.addListener(load);
 new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true });
-listenForUnlock(apply);
+listenToLockFrame(apply);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	switch (request.message) {

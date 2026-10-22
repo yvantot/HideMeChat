@@ -64,15 +64,59 @@ const Page = {
 		return Page.locate.conversation().element;
 	},
 
-	// The message logs of every open chat, each with what identifies its chat: `chatUrl` for the conversation
-	// on messages pages (from the page URL), `title` for pop-ups (their header shows the chat's name).
+	// Every open chat: its message log, the `area` around it (the conversation on messages pages, the chat
+	// window for pop-ups), and what identifies the chat: `chatUrl` for the conversation (from the page URL),
+	// `title` for pop-ups (their header shows the chat's name).
 	openChats() {
 		const conversation = Page.conversation();
 		return [...document.querySelectorAll('[role="log"]')].map((log) =>
 			conversation?.contains(log)
-				? { log, chatUrl: getCurrentChat(), title: null }
-				: { log, chatUrl: null, title: popupTitle(log) }
+				? { log, area: conversation, chatUrl: getCurrentChat(), title: null }
+				: { log, area: chatWindow(log), chatUrl: null, title: popupTitle(log) }
 		);
+	},
+
+	// The parts of an open chat's area that give it away outside its messages: { media, text }.
+	//   - Each visible name heading (the chat's header, the info panel) sits in a block with the chat's avatar;
+	//     the avatar is media, and the block's other parts with text are text, unless they hold controls
+	//     (Profile, Mute, …).
+	//   - The pinned-message banner: a button with text but no avatar, between the header and the log, in the
+	//     column that holds both (the info panel is outside it).
+	identityParts(area, log) {
+		const parts = { media: [], text: [] };
+		// Avatars are <img>, or <svg> with an <image> inside.
+		const avatars = (block) => [...block.querySelectorAll("img, svg")].filter((el) => el.tagName === "IMG" || el.querySelector("image"));
+		let column = null;
+		for (const heading of area.querySelectorAll("h1, h2, h3")) {
+			if (log.contains(heading)) continue;
+			let block = heading.parentElement;
+			while (block && block !== area && avatars(block).length === 0) block = block.parentElement;
+			// Visually hidden headings share a block with the whole log or the message box; skip those.
+			if (!block || block === area || block.contains(log) || block.querySelector('[role="textbox"]')) continue;
+
+			parts.media.push(...avatars(block));
+			for (const child of block.children) {
+				if (!child.textContent.trim()) continue;
+				const buttons = [...child.querySelectorAll('[role="button"]')];
+				if (child.matches('[role="button"]')) buttons.push(child);
+				if (buttons.some((button) => !button.contains(heading))) continue;
+				parts.text.push(child);
+			}
+
+			const shared = commonAncestor(heading, log);
+			if (shared && (!column || column.contains(shared))) column = shared;
+		}
+
+		if (column) {
+			const composer = area.querySelector('[role="textbox"]');
+			for (const button of column.querySelectorAll('[role="button"]')) {
+				if (log.contains(button) || button.contains(log) || (composer && button.contains(composer))) continue;
+				if (!button.textContent.trim() || avatars(button).length) continue;
+				if (parts.text.some((part) => part.contains(button) || button.contains(part))) continue;
+				parts.text.push(button);
+			}
+		}
+		return parts;
 	},
 
 	// Each locator returns { element, via }: via is "anchor", "fallback", or null when nothing was found.
@@ -119,8 +163,17 @@ function found(element, via) {
 // area (data-mw-file-dropzone). The message area has hidden headings of its own, so searching outward from
 // the log would find those first.
 function popupTitle(log) {
-	const chatWindow = log.closest("[data-mw-file-dropzone]")?.parentElement;
-	if (!chatWindow) return null;
-	const heading = chatWindow.querySelector('h2, [role="heading"]');
+	const heading = chatWindow(log)?.querySelector('h2, [role="heading"]');
 	return heading ? heading.textContent.trim() : null;
+}
+
+function commonAncestor(a, b) {
+	for (let el = a; el; el = el.parentElement) {
+		if (el.contains(b)) return el;
+	}
+	return null;
+}
+
+function chatWindow(log) {
+	return log.closest("[data-mw-file-dropzone]")?.parentElement ?? null;
 }

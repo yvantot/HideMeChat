@@ -1,4 +1,26 @@
-/* Hide Me Chat's own pages: the popup, settings and the lock screen frame. */
+/* Hide Me Chat's own pages: the popup (chats and settings views) and the lock screen frame. */
+
+/* Quicksand, bundled (SIL Open Font License, see fonts/Quicksand-OFL.txt). Other scripts fall back to the
+   system font. */
+@font-face {
+	font-family: "Quicksand";
+	font-style: normal;
+	font-weight: 300 700;
+	font-display: swap;
+	src: url("../fonts/quicksand-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+		U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+	font-family: "Quicksand";
+	font-style: normal;
+	font-weight: 300 700;
+	font-display: swap;
+	src: url("../fonts/quicksand-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
 	--bg: #f3f4f8;
 	--surface: #ffffff;
@@ -44,8 +66,12 @@ body {
 	margin: 0;
 	background: var(--bg);
 	color: var(--text);
-	font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	font: 500 14px/1.45 "Quicksand", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 	transition: background-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+button,
+input {
+	font-family: inherit;
 }
 /* The popup sizes to its content; the minimum height leaves room for the password gate. */
 body.popup {
@@ -60,11 +86,11 @@ p {
 }
 h1 {
 	font-size: 16px;
-	font-weight: 650;
+	font-weight: 700;
 }
 h2 {
 	font-size: 14px;
-	font-weight: 600;
+	font-weight: 700;
 }
 .hint,
 .subtle {
@@ -131,6 +157,16 @@ svg.icon {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+}
+.spaced {
+	margin-top: 12px;
+}
+.row.start {
+	justify-content: flex-start;
+	gap: 8px;
+}
+.row.tight {
+	gap: 6px;
 }
 
 /* ---------- controls ---------- */
@@ -543,18 +579,29 @@ input[type="color"].swatch::-webkit-color-swatch {
 }
 
 /* ---------- lock screen frame (lock.html) ---------- */
-/* A frame whose color-scheme differs from the page's gets an opaque backdrop, so it keeps "normal" and draws
-   its own dark colors. */
-:root:has(body.frame) {
-	color-scheme: normal;
-}
+/* The frame is sized to the card by the content script (from the size the frame reports), and the frame
+   element gets the same color-scheme as this page, so no backdrop shows around the card. */
 body.frame {
-	display: grid;
-	place-items: center;
-	min-height: 100vh;
-	padding: 12px;
+	padding: 0;
 	overflow: hidden;
 	background: transparent;
+}
+body.frame .lock-card {
+	width: 300px;
+	max-width: none;
+	box-shadow: none;
+	animation: none;
+}
+
+/* ---------- popup views (chats, settings) ---------- */
+.view {
+	animation: view-in 0.28s var(--ease) both;
+}
+.view.back {
+	animation-name: view-in-back;
+}
+.view.leaving {
+	animation: view-out 0.16s var(--ease) both;
 }
 
 /* ---------- settings ---------- */
@@ -610,6 +657,23 @@ body.frame {
 	from {
 		opacity: 0;
 		transform: translateY(6px);
+	}
+}
+@keyframes view-in {
+	from {
+		opacity: 0;
+		transform: translateX(14px);
+	}
+}
+@keyframes view-in-back {
+	from {
+		opacity: 0;
+		transform: translateX(-14px);
+	}
+}
+@keyframes view-out {
+	to {
+		opacity: 0;
 	}
 }
 @keyframes pop {

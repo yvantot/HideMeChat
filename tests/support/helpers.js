@@ -67,9 +67,11 @@ function messagesPage(site, ids, options = {}) {
 	);
 }
 
-// A chat pop-up: title h2 in the header, and a hidden h2 of its own next to the log, like the live ones.
+// A chat pop-up, like the live ones: the header has the avatar, the title h2 and a close button, and the
+// message area has a hidden h2 of its own next to the log.
 const popup = (title, tag = "popup") =>
-	`<div class="window"><div class="header"><div role="button"><h2><span><span>${title}</span></span></h2></div></div>` +
+	`<div class="window"><div class="header"><div role="button" class="popup-avatar"><img src="https://cdn.example/popup-avatar.jpg"></div>` +
+	`<div role="button" class="popup-title"><h2><span><span>${title}</span></span></h2></div><div role="button" aria-label="Close chat"><svg></svg></div></div>` +
 	`<div data-mw-file-dropzone="1"><div><h2>Messages</h2><div role="log"><div class="${CLASSES.MESSAGELIST}">${messages(tag)}</div></div></div><div role="textbox"></div></div></div>`;
 
 function facebookHome({ dropdown = false, popups = [], mainGrid = false } = {}) {

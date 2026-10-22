@@ -1,4 +1,5 @@
-const METHOD_ORDER = ["blur", "flip", "pixelate", "opacity"];
+// The settings view. Started by main.js once the popup is unlocked.
+const METHOD_ORDER = ["blur", "flip", "pixelate", "opacity", "redact"];
 
 const blurRange = document.getElementById("blur-val");
 const opacityRange = document.getElementById("opacity-val");
@@ -37,7 +38,7 @@ function showObfuscation(obfMethod) {
 	blurRange.value = obfMethod.blurIntensity;
 	opacityRange.value = obfMethod.brightnessIntensity;
 	blurDesc.textContent = blurRange.value;
-	opacityDesc.textContent = opacityRange.value;
+	opacityDesc.textContent = dimLabel(opacityRange.value);
 }
 
 function showSettings(data) {
@@ -139,13 +140,14 @@ async function replaceWithImport() {
 	showToast("Backup restored");
 }
 
-// ---------- page ----------
+// At 0, dimmed parts are invisible until hovered.
+function dimLabel(value) {
+	return Number(value) === 0 ? "0 (invisible)" : String(value);
+}
 
-fillIcons();
-themeToggle();
+// ---------- view ----------
 
-// Nothing is wired up until the page is unlocked.
-requireUnlock(async () => {
+async function initSettings() {
 	showSettings(await loadData());
 
 	for (const group of ["text", "image"]) {
@@ -157,7 +159,7 @@ requireUnlock(async () => {
 		});
 	}
 	blurRange.addEventListener("input", () => (blurDesc.textContent = blurRange.value));
-	opacityRange.addEventListener("input", () => (opacityDesc.textContent = opacityRange.value));
+	opacityRange.addEventListener("input", () => (opacityDesc.textContent = dimLabel(opacityRange.value)));
 	blurRange.addEventListener("change", () => saveObfuscation());
 	opacityRange.addEventListener("change", () => saveObfuscation());
 	document.getElementById("reset-obfuscate").addEventListener("click", () => {
@@ -185,4 +187,4 @@ requireUnlock(async () => {
 	chrome.storage.onChanged.addListener(async (changes, area) => {
 		if (area === "local") showSettings(await loadData());
 	});
-});
+}

@@ -1,57 +1,104 @@
-const PIXELATE_FILTER =
-	"filter: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='b' x='0' y='0'%3E%3CfeFlood x='4' y='4' height='2' width='2'/%3E%3CfeComposite width='10' height='10'/%3E%3CfeTile result='a'/%3E%3CfeComposite in='SourceGraphic' in2='a' operator='in'/%3E%3CfeMorphology operator='dilate' radius='5'/%3E%3C/filter%3E%3C/svg%3E#b\") !important;";
+const PIXELATE_URL =
+	"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='b' x='0' y='0'%3E%3CfeFlood x='4' y='4' height='2' width='2'/%3E%3CfeComposite width='10' height='10'/%3E%3CfeTile result='a'/%3E%3CfeComposite in='SourceGraphic' in2='a' operator='in'/%3E%3CfeMorphology operator='dilate' radius='5'/%3E%3C/filter%3E%3C/svg%3E#b\")";
+const PIXELATE_FILTER = `filter: ${PIXELATE_URL} !important;`;
 
-// Message parts that get the text or media style. Media is styled through the element wrapping it.
-const OBF_TEXT = `${SELECTORS.MESSAGEROW} :is(${SELECTORS.TEXT}, ${SELECTORS.STICKERS}, ${SELECTORS.REPLYTEXT})`;
-const OBF_MEDIA = `${SELECTORS.MESSAGEROW} :is(div:has(> img), div:has(> video), div:has(> a > img))`;
+// The black bar laid over text by the "redact" method.
+const BLACK_BAR =
+	'content: ""; position: absolute; inset: -2px; border-radius: 6px; background: #000; pointer-events: none; transition: opacity 0.2s;';
 
-// Stylesheet for obfuscated chats: the messages of open chats whose log is marked data-hc-obfuscated
-// (see markOpenChats), and the rows of obfuscated chats in the chat lists.
+// Message parts that get the text or media style. Text: the message, stickers, quoted replies, sender names and
+// "… replied to you" (h4), and attachment cards (links inside the text are already covered by it). Media is
+// styled through the element wrapping it: photos, videos, avatars and read receipts.
+const OBF_TEXT = `${SELECTORS.MESSAGEROW} :is(${SELECTORS.TEXT}, ${SELECTORS.STICKERS}, ${SELECTORS.REPLYTEXT}, h4, a[role="link"]:not(${SELECTORS.TEXT} *))`;
+const OBF_MEDIA = `${SELECTORS.MESSAGEROW} :is(div:has(> img), span:has(> img), div:has(> video), div:has(> a > img))`;
+
+// Stylesheet for obfuscated chats:
+//   - the messages of open chats whose log is marked data-hc-obfuscated (see markOpenChats);
+//   - who those chats are with (avatar, name) in their header, info panel or pop-up, marked data-hc-identity;
+//   - the rows of obfuscated chats in the chat lists, avatar included.
 function obfuscationCSS(chats, obfMethod) {
-	const text = obfStyles(obfMethod.text, obfMethod.blurIntensity, obfMethod.brightnessIntensity);
-	const media = obfStyles(obfMethod.image, obfMethod.blurIntensity, obfMethod.brightnessIntensity);
+	const text = obfStyles(obfMethod.text, obfMethod, "text");
+	const media = obfStyles(obfMethod.image, obfMethod, "media");
+	const rule = (selector, styles) => {
+		let css = `${selector} { ${styles.normal} } ${suffixed(selector, ":hover")} { ${styles.hover} } `;
+		if (styles.bar) {
+			css += `${suffixed(selector, "::after")} { ${BLACK_BAR} } ${suffixed(selector, ":hover::after")} { opacity: 0; } `;
+		}
+		return css;
+	};
 
 	let css =
-		`[data-hc-obfuscated] ${OBF_TEXT} { ${text.normal} } [data-hc-obfuscated] ${OBF_TEXT}:hover { ${text.hover} } ` +
-		`[data-hc-obfuscated] ${OBF_MEDIA} { ${media.normal} } [data-hc-obfuscated] ${OBF_MEDIA}:hover { ${media.hover} } `;
+		rule(`[data-hc-obfuscated] ${OBF_TEXT}`, text) +
+		rule(`[data-hc-obfuscated] ${OBF_MEDIA}`, media) +
+		rule(`[data-hc-identity="text"]`, text) +
+		rule(`[data-hc-identity="media"]`, media);
 
-	const rows = chats
+	const links = chats
 		.filter((chat) => chat.isObfuscated)
-		.flatMap((chat) => Page.chatLinkSelector(chat.chatURL).split(", "))
-		.map((link) => `${link} > div`);
-	if (rows.length) {
-		const selector = rows.join(", ");
-		const hover = rows.map((row) => `${row}:hover`).join(", ");
-		css += `${selector} { ${text.normal} } ${hover} { ${text.hover} } `;
+		.flatMap((chat) => Page.chatLinkSelector(chat.chatURL).split(", "));
+	if (links.length) {
+		css += rule(links.map((link) => `${link} > div`).join(", "), text);
+		css += rule(links.map((link) => `${link} :is(img, svg:has(image))`).join(", "), media);
 	}
 	return css;
 }
 
-// The declarations for one set of methods: { normal, hover }. Blur and pixelate both set `filter`, so when both
-// are picked they're merged into one declaration.
-function obfStyles(selected, blurIntensity, brightnessIntensity) {
-	// Each method: [style while obfuscated, style on hover].
-	const methods = {
-		blur: [`filter: blur(${blurIntensity}px) !important;`, "filter: none !important;"],
-		opacity: [`opacity: ${brightnessIntensity} !important;`, "opacity: 1 !important;"],
-		flip: ["transform: scaleX(-1) !important;", "transform: none !important;"],
-		pixelate: [PIXELATE_FILTER, "filter: none !important;"],
-	};
+// The same selector list with `suffix` (":hover", "::after") on each part.
+function suffixed(selectorList, suffix) {
+	return splitSelectorList(selectorList)
+		.map((selector) => `${selector}${suffix}`)
+		.join(", ");
+}
 
-	const combined = selected.includes("blur") && selected.includes("pixelate");
+// Splits "a, b:is(c, d)" at its top-level commas only.
+function splitSelectorList(selectorList) {
+	const parts = [];
+	let depth = 0;
+	let current = "";
+	for (const char of selectorList) {
+		if (char === "(" || char === "[") depth++;
+		if (char === ")" || char === "]") depth--;
+		if (char === "," && depth === 0) {
+			parts.push(current.trim());
+			current = "";
+		} else {
+			current += char;
+		}
+	}
+	parts.push(current.trim());
+	return parts;
+}
+
+// The declarations for one set of methods (text or media): { normal, hover, bar }. Blur and pixelate are both
+// filters, so they share one declaration. The black bar ("redact") is solid, so dimming is skipped with it:
+// for text it's a bar laid over the element (`bar`, drawn by ::after), for media the picture turns black.
+function obfStyles(selected, { blurIntensity, brightnessIntensity }, kind) {
+	const redact = selected.includes("redact");
+	const filters = [];
+	if (redact && kind === "media") {
+		filters.push("brightness(0)");
+	} else {
+		if (selected.includes("blur")) filters.push(`blur(${blurIntensity}px)`);
+		if (selected.includes("pixelate")) filters.push(PIXELATE_URL);
+	}
+
 	let normal = "";
 	let hover = "";
-	selected.forEach((method) => {
-		if (!Object.hasOwn(methods, method)) return;
-		if (combined && (method === "blur" || method === "pixelate")) return;
-		normal += methods[method][0];
-		hover += methods[method][1];
-	});
-	if (combined) {
-		normal += `${methods.blur[0].replace(" !important;", "")} ${methods.pixelate[0].replace("filter: ", "")}`;
-		hover += methods.blur[1];
+	if (filters.length) {
+		normal += `filter: ${filters.join(" ")} !important;`;
+		hover += "filter: none !important;";
 	}
-	return { normal, hover };
+	if (selected.includes("opacity") && !redact) {
+		normal += `opacity: ${brightnessIntensity} !important;`;
+		hover += "opacity: 1 !important;";
+	}
+	if (selected.includes("flip")) {
+		normal += "transform: scaleX(-1) !important;";
+		hover += "transform: none !important;";
+	}
+	const bar = redact && kind === "text";
+	if (bar) normal += "position: relative !important;";
+	return { normal, hover, bar };
 }
 
 // Fixed styles for the @ rules people can put in a message.
@@ -61,14 +108,27 @@ const AT_RULE_CSS =
 	'div[data-obfblr="true"] { filter: blur(8px) !important; } div[data-obfblr="true"]:hover { filter: blur(0px) !important; }' +
 	'div[data-obfdim="true"] { opacity: 0.1 !important; } div[data-obfdim="true"]:hover { opacity: 1 !important; }';
 
-// Marks the log of every open chat that's set to obfuscate. Pop-ups are matched to stored chats by name.
+// Marks the log of every open chat that's set to obfuscate, and the parts of its area that show who it's with.
+// Pop-ups are matched to stored chats by name.
 function markOpenChats(chats) {
 	const obfuscatedUrls = new Set(chats.filter((chat) => chat.isObfuscated).map((chat) => chat.chatURL));
 	const obfuscatedNames = new Set(chats.filter((chat) => chat.isObfuscated).map((chat) => chat.chatName));
+	const identity = new Map();
 
-	Page.openChats().forEach(({ log, chatUrl, title }) => {
+	Page.openChats().forEach(({ log, area, chatUrl, title }) => {
 		const obfuscated = chatUrl ? obfuscatedUrls.has(chatUrl) : obfuscatedNames.has(title);
 		setFlag(log, "data-hc-obfuscated", obfuscated);
+		if (!obfuscated || !area) return;
+		const { media, text } = Page.identityParts(area, log);
+		media.forEach((element) => identity.set(element, "media"));
+		text.forEach((element) => identity.set(element, "text"));
+	});
+
+	document.querySelectorAll("[data-hc-identity]").forEach((element) => {
+		if (!identity.has(element)) element.removeAttribute("data-hc-identity");
+	});
+	identity.forEach((kind, element) => {
+		if (element.getAttribute("data-hc-identity") !== kind) element.setAttribute("data-hc-identity", kind);
 	});
 }
 

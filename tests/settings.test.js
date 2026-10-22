@@ -1,12 +1,12 @@
-// The settings page (html/setting.html): autosaving options, password form, backup.
+// The popup's settings view: autosaving options, password form, backup.
 const { pageWorld, chat, stored, prefs, errors, hashPassword, verifyPassword, waitFor, settleAll } = require("./support/helpers");
 
-const URL = "chrome-extension://fakeid/html/setting.html";
+const URL = "chrome-extension://fakeid/html/popup.html";
 const unlocked = { session: { popupUnlockedUntil: Date.now() + 10 * 60000 } };
 const chip = (w, group, method) => w.doc.querySelector(`.chips[data-group="${group}"] .chip[data-method="${method}"]`);
 
 async function open(data, options = unlocked) {
-	const w = pageWorld("setting", URL, data, options);
+	const w = pageWorld("popup", URL, data, options);
 	await settleAll();
 	return w;
 }
@@ -33,6 +33,18 @@ module.exports = async (check) => {
 		await $("blur-val").dispatch("change");
 		await settleAll();
 		check("slider saves when released", w.storage.preferences.obfMethod.blurIntensity === 7);
+
+		check("black bar offered for text and media", !!chip(w, "text", "redact") && !!chip(w, "image", "redact"));
+		await chip(w, "image", "redact").dispatch("click");
+		await settleAll();
+		check("black bar saves, last in the method order", w.storage.preferences.obfMethod.image.join() === "pixelate,redact" || w.storage.preferences.obfMethod.image.join() === "blur,pixelate,redact", w.storage.preferences.obfMethod.image.join());
+		check("dim can go down to 0", $("opacity-val").getAttribute("min") === "0");
+		$("opacity-val").value = "0";
+		await $("opacity-val").dispatch("input");
+		check("dim 0 is labelled invisible", $("opacity-desc").textContent === "0 (invisible)");
+		await $("opacity-val").dispatch("change");
+		await settleAll();
+		check("dim 0 saved", w.storage.preferences.obfMethod.brightnessIntensity === 0);
 
 		await $("reset-obfuscate").dispatch("click");
 		await settleAll();

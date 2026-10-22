@@ -23,7 +23,7 @@ module.exports = async (check) => {
 		check("toggles show each chat's state", pressed(w, "toggleHide", "/t/1/") === "true" && pressed(w, "togglePin", "/t/1/") === "false" && pressed(w, "toggleLock", "/t/2/") === "true");
 		check("summary line names what's on", items(w)[1].querySelector(".chat-meta").textContent === "Pinned · Locked");
 		check("chat links open on the active tab's site", items(w)[0].querySelector(".chat-name").getAttribute("href") === "https://www.facebook.com/messages/t/1/");
-		check("icons drawn", w.doc.querySelectorAll(".toggle svg").length === 8 && !!w.doc.querySelector("#toggle-theme svg"));
+		check("icons drawn", w.doc.querySelectorAll(".toggle svg").length === 8 && !!w.doc.querySelector(".theme-toggle svg"));
 		check("no personal or promotional content", !/Hire Me|Follow me|Shoutout|Free|dalman|bsky|nopaste/i.test(w.doc.documentElement.textContent + JSON.stringify([...w.doc.querySelectorAll("a")].map((a) => a.getAttribute("href")))));
 
 		const firstItem = items(w)[0];
@@ -104,14 +104,46 @@ module.exports = async (check) => {
 		check("recent unlock: no password needed", w.doc.getElementById("hc-gate").hidden && items(w).length === 1);
 	}
 
+	// ---------- views ----------
+	{
+		const w = await open(stored([chat("1", { isHidden: true })]));
+		const chats = w.doc.getElementById("view-chats");
+		const settings = w.doc.getElementById("view-settings");
+		check("starts on the chats view", !chats.hidden && settings.hidden);
+		const going = w.doc.querySelector('[data-go="settings"]').dispatch("click");
+		check("leaving view animates out first", chats.classList.contains("leaving") && settings.hidden);
+		w.clock.advance(200);
+		await going;
+		check("settings view shown in the same page", chats.hidden && !settings.hidden && !settings.classList.contains("back"));
+		const back = w.doc.querySelector('[data-go="chats"]').dispatch("click");
+		w.clock.advance(200);
+		await back;
+		check("back to chats slides in from the other side", !chats.hidden && settings.hidden && chats.classList.contains("back"));
+		check("both views wired once, in one page", w.doc.querySelectorAll(".theme-toggle svg").length === 2 && errors(w).length === 0, errors(w).join(" | "));
+	}
+	{
+		const w = pageWorld("popup", URL, stored([]), { tabs: messengerTab });
+		check("no saved theme copy: starts light", !w.doc.documentElement.classList.contains("dark"));
+	}
+	{
+		// theme.js runs before the page is drawn, from the copy in localStorage.
+		const { createWorld } = require("./support/world");
+		const { ROOT, read } = require("./support/helpers");
+		const w = createWorld({ root: ROOT, files: [], href: URL, state: stored([], { userTheme: "dark" }), html: read("html/popup.html") });
+		w.localStorage.set("hmc-theme", "dark");
+		w.run(read("js/popup/theme.js"));
+		check("saved dark theme applied before anything else runs", w.doc.documentElement.classList.contains("dark"));
+	}
+
 	// ---------- theme ----------
 	{
 		const w = await open(stored([chat("1", { isHidden: true })]));
-		const button = w.doc.getElementById("toggle-theme");
+		const button = w.doc.querySelector(".theme-toggle");
 		await button.dispatch("click");
 		const first = w.storage.preferences.userTheme;
 		await button.dispatch("click");
 		check("theme button saves dark then light", first === "dark" && w.storage.preferences.userTheme === "light");
 		check("theme button icon follows the theme", button.getAttribute("data-icon") === "moon" && !w.doc.documentElement.classList.contains("dark"));
+		check("theme copy kept for the next first paint", w.localStorage.get("hmc-theme") === "light");
 	}
 };

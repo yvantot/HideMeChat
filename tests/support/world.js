@@ -92,6 +92,7 @@ function createWorld({ root, files, href, state, html }) {
 		observers: [],
 		listeners: { storageChanged: [], localChanged: [], runtimeMessage: [], installed: [], menuClicked: [] },
 		session: {},
+		localStorage: new Map(),
 		windowListeners: {},
 		posted: [],
 	};
@@ -238,6 +239,11 @@ function createWorld({ root, files, href, state, html }) {
 		TextDecoder,
 		crypto: globalThis.crypto,
 		URLSearchParams,
+		localStorage: {
+			getItem: (key) => world.localStorage.get(key) ?? null,
+			setItem: (key, value) => world.localStorage.set(key, String(value)),
+			removeItem: (key) => world.localStorage.delete(key),
+		},
 		// window events (message, focus) and the parent window a frame posts to
 		addEventListener: (type, fn) => (world.windowListeners[type] ??= []).push(fn),
 		parent: {

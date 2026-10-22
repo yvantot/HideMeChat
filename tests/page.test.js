@@ -91,6 +91,28 @@ module.exports = async (check) => {
 		check("live Facebook home: nothing required", w.run("Page.health().ok") === true);
 	}
 	{
+		// Who the chat is with, on the live messenger.com capture: header and info panel avatars and names, and
+		// the username under the name in the info panel.
+		const w = contentWorld("https://www.messenger.com/e2ee/t/1001", fixture("messenger"), stored([chat("e1001", { isObfuscated: true })]));
+		const media = w.doc.querySelectorAll('[data-hc-identity="media"]');
+		const texts = [...w.doc.querySelectorAll('[data-hc-identity="text"]')].map((el) => el.textContent.trim());
+		check("live messenger.com: header and info panel avatars obfuscated", media.length === 2 && [...media].every((el) => el.tagName === "IMG" && !el.closest('[role="log"]')), String(media.length));
+		check("live messenger.com: names and username obfuscated", texts.filter((t) => t === "Text 11").length === 2 && texts.includes("Text 46"), JSON.stringify(texts));
+		check("live messenger.com: hidden headings and the message box left alone", !w.doc.querySelector('[role="log"] [data-hc-identity]') && !texts.some((t) => /Text (10|12|43|44|45)/.test(t)));
+	}
+	{
+		// The live Facebook messages capture has a pinned message under the header: its banner shows the message.
+		const w = contentWorld("https://www.facebook.com/messages/t/1002", fixture("facebook-messages"), stored([chat("1002", { isObfuscated: true })]));
+		const texts = [...w.doc.querySelectorAll('[data-hc-identity="text"]')].map((el) => el.textContent.trim());
+		check("live Facebook messages: header name and pinned message obfuscated", JSON.stringify(texts) === '["Text 5","Text 10Text 11"]', JSON.stringify(texts));
+		check("live Facebook messages: nothing in the messages, the message box or the chat list marked", !w.doc.querySelector('[role="log"] [data-hc-identity], [role="textbox"] [data-hc-identity], [role="grid"] [data-hc-identity]'));
+	}
+	{
+		const w = contentWorld("https://www.facebook.com/", fixture("facebook-home"), stored([chat("1002", { isObfuscated: true, chatName: "Text 3" })]));
+		const texts = [...w.doc.querySelectorAll('[data-hc-identity="text"]')].map((el) => el.textContent.trim());
+		check("live Facebook home: pop-up avatar and title obfuscated", texts.includes("Text 3") && w.doc.querySelectorAll('[data-hc-identity="media"]').length === 1, JSON.stringify(texts));
+	}
+	{
 		// The engine on the live captures: an obfuscated chat's pop-up is marked, and a locked one is covered.
 		const data = stored([chat("1002", { isObfuscated: true, chatName: "Text 3" })]);
 		const w = contentWorld("https://www.facebook.com/", fixture("facebook-home"), data);

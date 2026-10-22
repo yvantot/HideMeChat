@@ -5,11 +5,14 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>Hide Me Chat</title>
 		<link rel="stylesheet" href="../css/ui.css" />
+		<script src="../js/popup/theme.js"></script>
 		<script src="../js/shared/icons.js" defer></script>
 		<script src="../js/shared/password.js" defer></script>
 		<script src="../js/shared/storage.js" defer></script>
 		<script src="../js/popup/utilities.js" defer></script>
-		<script src="../js/popup/mainPopup.js" defer></script>
+		<script src="../js/popup/chats.js" defer></script>
+		<script src="../js/popup/settings.js" defer></script>
+		<script src="../js/popup/main.js" defer></script>
 	</head>
 	<body class="popup">
 		<div id="hc-gate" class="gate" hidden>
@@ -25,33 +28,135 @@
 			</div>
 		</div>
 
-		<header class="topbar">
-			<img class="logo" src="../assets/hidechat_icon48.png" alt="" />
-			<div class="title">
-				<h1>Hide Me Chat</h1>
-				<p class="subtle" id="version"></p>
-			</div>
-			<button id="toggle-theme" class="icon-button" type="button" title="Switch theme" aria-label="Switch theme" data-icon="moon"></button>
-			<a href="./setting.html" class="icon-button" title="Settings" aria-label="Settings" data-icon="settings"></a>
-		</header>
+		<section id="view-chats" class="view">
+			<header class="topbar">
+				<img class="logo" src="../assets/hidechat_icon48.png" alt="" />
+				<div class="title">
+					<h1>Hide Me Chat</h1>
+					<p class="subtle" id="version"></p>
+				</div>
+				<button class="icon-button theme-toggle" type="button" title="Switch theme" aria-label="Switch theme" data-icon="moon"></button>
+				<button class="icon-button" type="button" data-go="settings" title="Settings" aria-label="Settings" data-icon="settings"></button>
+			</header>
 
-		<p id="page-health" class="notice" role="status" hidden></p>
+			<p id="page-health" class="notice" role="status" hidden></p>
 
-		<main class="card">
-			<div class="card-head">
-				<h2>Your chats<span id="chatCount" class="count">0</span></h2>
-				<label class="switch" title="Show hidden chats on this page for now">
-					<input type="checkbox" id="toggle-hiddenall" disabled />
-					<span class="track"></span>
-					Show hidden
-				</label>
-			</div>
-			<ul id="hiddenContainer" class="chat-list"></ul>
-			<div id="empty-state" class="empty" hidden>
-				<span data-icon="chat"></span>
-				<p>No chats here yet.</p>
-				<p>Right-click a chat in Messenger and choose <strong>Hide Me Chat</strong> to hide, pin, obfuscate or lock it.</p>
-			</div>
-		</main>
+			<main class="card">
+				<div class="card-head">
+					<h2>Your chats<span id="chatCount" class="count">0</span></h2>
+					<label class="switch" title="Show hidden chats on this page for now">
+						<input type="checkbox" id="toggle-hiddenall" disabled />
+						<span class="track"></span>
+						Show hidden
+					</label>
+				</div>
+				<ul id="hiddenContainer" class="chat-list"></ul>
+				<div id="empty-state" class="empty" hidden>
+					<span data-icon="chat"></span>
+					<p>No chats here yet.</p>
+					<p>Right-click a chat in Messenger and choose <strong>Hide Me Chat</strong> to hide, pin, obfuscate or lock it.</p>
+				</div>
+			</main>
+		</section>
+
+		<section id="view-settings" class="view" hidden>
+			<header class="topbar">
+				<button class="icon-button" type="button" data-go="chats" title="Back" aria-label="Back" data-icon="back"></button>
+				<div class="title"><h1>Settings</h1></div>
+				<button class="icon-button theme-toggle" type="button" title="Switch theme" aria-label="Switch theme" data-icon="moon"></button>
+			</header>
+
+			<section class="card">
+				<div class="card-head">
+					<div>
+						<h2>Obfuscation</h2>
+						<p class="hint">How obfuscated chats look. Hover over anything to see it clearly.</p>
+					</div>
+				</div>
+				<div class="method-row">
+					<span class="label">Text</span>
+					<div class="chips" data-group="text">
+						<button type="button" class="chip" data-method="opacity">Dim</button>
+						<button type="button" class="chip" data-method="flip">Flip</button>
+						<button type="button" class="chip" data-method="blur">Blur</button>
+						<button type="button" class="chip" data-method="pixelate">Pixelate</button>
+						<button type="button" class="chip" data-method="redact">Black bar</button>
+					</div>
+				</div>
+				<div class="method-row">
+					<span class="label">Media</span>
+					<div class="chips" data-group="image">
+						<button type="button" class="chip" data-method="opacity">Dim</button>
+						<button type="button" class="chip" data-method="flip">Flip</button>
+						<button type="button" class="chip" data-method="blur">Blur</button>
+						<button type="button" class="chip" data-method="pixelate">Pixelate</button>
+						<button type="button" class="chip" data-method="redact">Black bar</button>
+					</div>
+				</div>
+				<div class="stack spaced">
+					<label class="slider">
+						<span class="row">Blur strength <output id="blur-desc"></output></span>
+						<input type="range" id="blur-val" min="1" max="8" step="1" />
+					</label>
+					<label class="slider">
+						<span class="row">Dim level <output id="opacity-desc"></output></span>
+						<input type="range" id="opacity-val" min="0" max="0.9" step="0.1" />
+					</label>
+					<div><button type="button" id="reset-obfuscate" class="text-button">Reset to defaults</button></div>
+				</div>
+			</section>
+
+			<section class="card">
+				<div class="row">
+					<div>
+						<h2>Pinned chat color</h2>
+						<p class="hint">Background of pinned chats in the chat list.</p>
+					</div>
+					<input id="pinned-color" class="swatch" type="color" aria-label="Pinned chat color" />
+				</div>
+			</section>
+
+			<section class="card">
+				<div class="row">
+					<div>
+						<h2>Password</h2>
+						<p class="hint" id="password-status">Unlocks locked chats and this popup.</p>
+					</div>
+					<button type="button" id="change-password" class="button">Set</button>
+				</div>
+				<div id="password-collapse" class="collapse">
+					<div>
+						<form id="password-form" class="stack spaced">
+							<input id="password-current" class="field" type="password" placeholder="Current password" autocomplete="current-password" maxlength="126" />
+							<input id="password-new" class="field" type="password" placeholder="New password (5 or more characters)" autocomplete="new-password" maxlength="126" />
+							<input id="password-confirm" class="field" type="password" placeholder="Repeat new password" autocomplete="new-password" maxlength="126" />
+							<div class="row">
+								<p id="password-message" class="message" role="status"></p>
+								<button class="button primary" type="submit">Save password</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</section>
+
+			<section class="card">
+				<h2>Backup</h2>
+				<p class="hint">Save your chats and settings to a file, or restore them from one. The password is kept only as a hash.</p>
+				<div class="row start spaced">
+					<button type="button" id="export-data" class="button"><span data-icon="download"></span>Export</button>
+					<label for="import-data" class="button"><span data-icon="upload"></span>Import</label>
+					<input type="file" id="import-data" accept=".txt" hidden />
+				</div>
+				<div id="import-confirm" class="confirm" hidden>
+					<span>Replace everything with this file?</span>
+					<span class="row tight">
+						<button type="button" id="import-cancel" class="button">Cancel</button>
+						<button type="button" id="import-replace" class="button primary">Replace</button>
+					</span>
+				</div>
+			</section>
+		</section>
+
+		<div id="toast" class="toast" role="status"></div>
 	</body>
 </html>

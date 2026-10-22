@@ -28,12 +28,28 @@ function show(form) {
 	unlockForm.hidden = form !== unlockForm;
 	createForm.hidden = form !== createForm;
 	form.querySelector("input").focus();
+	reportSize();
+}
+
+// Tells the page how big the card is, so the frame can fit it exactly (no edges around the rounded card).
+function reportSize() {
+	const card = document.querySelector(".lock-card");
+	const { width, height } = card.getBoundingClientRect();
+	parent.postMessage({ hidechat: "size", width: Math.ceil(width), height: Math.ceil(height) }, "*");
 }
 
 async function init() {
 	const data = await loadData();
-	if (data.preferences.userTheme === "dark") document.documentElement.classList.add("dark");
+	const dark = data.preferences.userTheme === "dark";
+	if (dark) document.documentElement.classList.add("dark");
+	else document.documentElement.classList.remove("dark");
+	try {
+		localStorage.setItem("hmc-theme", dark ? "dark" : "light");
+	} catch {
+		// Only used to avoid a flash of the wrong theme next time.
+	}
 	show(data.preferences.password ? unlockForm : createForm);
+	if (window.ResizeObserver) new ResizeObserver(reportSize).observe(document.querySelector(".lock-card"));
 }
 
 unlockForm.addEventListener("submit", async (event) => {

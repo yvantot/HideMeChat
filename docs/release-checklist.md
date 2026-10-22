@@ -25,19 +25,19 @@ Do these on **facebook.com/messages**, **messenger.com**, and the **Facebook hom
 | Hide | Hidden chats are gone from the list; **Show hidden** in the popup brings them back until it's switched off. |
 | Hide all other chats | Every other chat in the list is hidden. |
 | Pin | Pinned chats are at the top, in the pinned color, and stay there when new messages arrive. |
-| Obfuscate | Messages, the chat-list preview and the chat's pop-up are obfuscated; hovering a message shows it; other chats and pop-ups are untouched. |
+| Obfuscate | Messages, the chat-list row, the header's name and picture, the pinned message, the info panel and the chat's pop-up are obfuscated; hovering shows each one; other chats and pop-ups are untouched. Try each method, including **Black bar**, and dim at 0 (invisible until hovered). |
 | @ rules | A message with `@blr`, `@pxl`, `@flp` or `@dim` shows that effect. |
-| Lock | The lock screen covers the chat (and fades in); the preview is hidden; the pop-up is covered with a link. The right password unlocks it, a wrong one shakes the form. |
+| Lock | The lock screen covers the chat (and fades in) with a rounded card and no square edges around it, in both themes; the preview is hidden; the pop-up is covered with a link. The right password unlocks it, a wrong one shakes the form. |
 | No password yet | Locking a chat shows "Create a password"; after saving, the password unlocks. |
 | Popup | Asks for the password when one is set, then stays unlocked for 5 minutes; toggles work; rows animate in and out; empty state when nothing is flagged. |
-| Settings | Changes save at once with a "Saved" toast; password change needs the current password; export, then import the file again. |
-| Themes | Light and dark look right in the popup, settings and lock screen. |
+| Settings | Opens and closes inside the popup with a slide, no white flash; changes save at once with a "Saved" toast; password change needs the current password; export, then import the file again. |
+| Themes | Light and dark look right in the popup, settings and lock screen, in the Quicksand font. |
 | Console | No errors from Hide Me Chat on any page. |
 
 ## Packaging
 
-Commit first, then build the zip for the Chrome Web Store from the committed files. It leaves out `tests/` and `docs/`:
+Commit first, then build the zip for the Chrome Web Store from the committed files. It leaves out `tests/` and `docs/` (keep `fonts/`: it holds the font and its license):
 
 ```
-git archive --format=zip -o hide-me-chat-3.0.0.zip HEAD manifest.json assets css html js
+git archive --format=zip -o hide-me-chat-3.0.0.zip HEAD manifest.json assets css fonts html js
 ```

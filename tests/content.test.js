@@ -1,5 +1,5 @@
 // The content scripts: one observer, CSS features, marking, right-click details, and the messages they answer.
-const { CLASSES, contentWorld, messagesPage, messages, facebookHome, chatHref, chat, stored, errors } = require("./support/helpers");
+const { CLASSES, contentWorld, messagesPage, messages, facebookHome, chatHref, chatRows, chat, stored, errors } = require("./support/helpers");
 
 const standardChats = () => [
 	chat("1", { isHidden: true }),
@@ -34,9 +34,11 @@ module.exports = async (check) => {
 		check("pin: Facebook's own order untouched", w.run(`[...Page.chatList().children].map(r => r.querySelector("a").getAttribute("href")).join()`) === ["7", "1", "2", "3", "4", "e5"].map((id) => chatHref("fb", id)).join());
 
 		const obf = css(w, "hidechat-obfuscate");
-		check("obfuscation: text style", obf.includes(`[data-hc-obfuscated] div[data-scope='messages_table'] :is(div[dir='auto'], div[role='img'], div[class='xi81zsa x126k92a']) { opacity: 0.3 !important;transform: scaleX(-1) !important; }`));
-		check("obfuscation: media merges blur and pixelate", /:is\(div:has\(> img\), div:has\(> video\), div:has\(> a > img\)\) \{ filter: blur\(5px\) url\("data:image/.test(obf));
-		check("obfuscation: chat-list rows", obf.includes(`[role="grid"] a[href='/messages/t/2/'] > div`));
+		check("obfuscation: text style, including sender names, reply headers and attachment cards", obf.includes(`[data-hc-obfuscated] div[data-scope='messages_table'] :is(div[dir='auto'], div[role='img'], div[class='xi81zsa x126k92a'], h4, a[role="link"]:not(div[dir='auto'] *)) { opacity: 0.3 !important;transform: scaleX(-1) !important; }`), obf.slice(0, 300));
+		check("obfuscation: hover reveals each part", obf.includes(`a[role="link"]:not(div[dir='auto'] *)):hover { opacity: 1 !important;transform: none !important; }`));
+		check("obfuscation: media (read receipts too) merges blur and pixelate", /:is\(div:has\(> img\), span:has\(> img\), div:has\(> video\), div:has\(> a > img\)\) \{ filter: blur\(5px\) url\("data:image/.test(obf));
+		check("obfuscation: who the chat is with", obf.includes(`[data-hc-identity="text"] { opacity: 0.3 !important;transform: scaleX(-1) !important; }`) && /\[data-hc-identity="media"\] \{ filter: blur\(5px\)/.test(obf));
+		check("obfuscation: chat-list rows, avatar included", obf.includes(`[role="grid"] a[href='/messages/t/2/'] > div`) && /\[role="grid"\] a\[href='\/messages\/t\/2\/'\] :is\(img, svg:has\(image\)\)[^{]*\{ filter: blur\(5px\)/.test(obf));
 		check("locked chats: previews hidden", css(w, "hidechat-lockedrows").includes(`[role="grid"] a[href='/messages/t/4/'] span[dir="auto"] ~ div`));
 
 		check("open obfuscated chat's log marked", $(w, '[role="log"]').hasAttribute("data-hc-obfuscated"));
@@ -78,6 +80,59 @@ module.exports = async (check) => {
 		w.storage = stored([chat("1", { isHidden: true })]);
 		w.listeners.storageChanged.forEach((f) => f({}));
 		check("unmigrated data: applies once migrated", css(w, "hidechat-hidden").includes("/messages/t/1/"));
+	}
+
+	// ---------- black bar and dim to 0 ----------
+	{
+		const data = stored([chat("2", { isObfuscated: true })]);
+		data.preferences.obfMethod = { text: ["redact", "opacity", "flip"], image: ["redact", "blur"], blurIntensity: 5, brightnessIntensity: 0.3 };
+		const w = contentWorld("https://www.facebook.com/messages/t/2", messagesPage("fb", ["2"]), data);
+		const obf = css(w, "hidechat-obfuscate");
+		check("black bar on text: a solid bar over each part, gone on hover", obf.includes(`[data-hc-identity="text"] { transform: scaleX(-1) !important;position: relative !important; }`) && obf.includes(`[data-hc-identity="text"]::after { content: ""; position: absolute; inset: -2px; border-radius: 6px; background: #000;`) && obf.includes(`[data-hc-identity="text"]:hover::after { opacity: 0; }`), obf.slice(0, 400));
+		check("black bar on text: dimming skipped so the bar stays solid", !/\[data-hc-identity="text"\] \{[^}]*opacity/.test(obf));
+		check("black bar on media: pictures turn black, back on hover", obf.includes(`[data-hc-identity="media"] { filter: brightness(0) !important; }`) && obf.includes(`[data-hc-identity="media"]:hover { filter: none !important; }`));
+		check("black bar on media: no bar element needed", !obf.includes(`[data-hc-identity="media"]::after`));
+
+		data.preferences.obfMethod = { text: ["opacity"], image: ["opacity"], blurIntensity: 5, brightnessIntensity: 0 };
+		w.storage = data;
+		w.listeners.storageChanged.forEach((f) => f({}));
+		check("dim 0 makes parts invisible until hovered", css(w, "hidechat-obfuscate").includes(`[data-hc-identity="text"] { opacity: 0 !important; } [data-hc-identity="text"]:hover { opacity: 1 !important; }`));
+	}
+
+	// ---------- who the chat is with: header, info panel, pop-up ----------
+	{
+		const rows =
+			`<div data-scope="messages_table"><div><h4 dir="auto"><span dir="auto">Name 2 replied to you</span></h4><div dir="auto">hi <a role="link" href="#">example.com</a></div></div></div>` +
+			`<div data-scope="messages_table"><div><a role="link" href="#" class="attachment"><span dir="auto">file.pdf</span><span dir="auto">1.2 MB</span></a></div></div>` +
+			`<div data-scope="messages_table"><div><div><img src="https://cdn.example/photo.jpg"></div><span class="receipt"><img src="https://cdn.example/seen.jpg"></span></div></div>`;
+		const page =
+			`<div role="grid"><div class="${CLASSES.CHATLIST}">${chatRows("fb", ["2", "3"])}</div></div>` +
+			`<div role="main"><div class="conversation"><div class="chat-column">` +
+			`<div class="header"><div role="button" class="header-block"><div class="header-avatar"><img src="https://cdn.example/avatar.jpg"></div><div class="header-name"><div><h3 dir="auto"><span>Name 2</span></h3></div></div></div><div role="button" aria-label="Call"><svg></svg></div></div>` +
+			`<div role="button" class="pinned"><svg></svg><span dir="auto">Pinned message</span><span dir="auto">meet at 6</span></div>` +
+			`<div class="column"><h3>Messages</h3><div role="log"><div class="${CLASSES.MESSAGELIST}">${rows}</div></div><div role="textbox"></div><div role="button" aria-label="Send"><svg></svg></div></div>` +
+			`</div><div class="panel"><div class="profile"><div class="panel-avatar"><img src="https://cdn.example/avatar-big.jpg"></div><div class="panel-name"><h3 dir="auto"><span dir="auto"><a role="link" href="#">Name 2</a></span></h3></div>` +
+			`<div class="panel-username"><span dir="auto">name.two</span></div><div class="panel-actions"><div role="button"><svg></svg></div><span dir="auto">Profile</span></div></div>` +
+			`<div role="button" class="panel-media"><span dir="auto">Media and files</span></div></div>` +
+			`</div></div>`;
+		const w = contentWorld("https://www.facebook.com/messages/t/2", page, stored([chat("2", { isObfuscated: true })]));
+		const marked = (kind) => [...$$(w, `[data-hc-identity="${kind}"]`)].map((el) => el.getAttribute("class") ?? el.getAttribute("src"));
+		check("identity: both avatars obfuscated, not the photos or read receipts", marked("media").join() === "https://cdn.example/avatar.jpg,https://cdn.example/avatar-big.jpg", marked("media").join());
+		check("identity: header name, pinned message, info panel name and username obfuscated", marked("text").join() === "header-name,pinned,panel-name,panel-username", marked("text").join());
+		check("identity: controls and the info panel's menu left alone", !$(w, '[aria-label="Call"][data-hc-identity], [aria-label="Send"][data-hc-identity], .panel-media[data-hc-identity]'));
+		check("identity: nothing inside the messages or the message box marked", !$(w, '[role="log"] [data-hc-identity], [role="textbox"][data-hc-identity]'));
+
+		navigate(w, "https://www.facebook.com/messages/t/3");
+		check("identity: marks removed in a chat that isn't obfuscated", $$(w, "[data-hc-identity]").length === 0);
+		navigate(w, "https://www.facebook.com/messages/t/2");
+		check("identity: marks back when returning", $$(w, "[data-hc-identity]").length === 6);
+		check("identity: no errors", errors(w).length === 0, errors(w).join(" | "));
+	}
+	{
+		const w = contentWorld("https://www.facebook.com/", facebookHome({ popups: ["Name 2", "Name 9"] }), stored([chat("2", { isObfuscated: true })]));
+		const windows = $$(w, ".window");
+		check("pop-up identity: avatar and title of the obfuscated chat's pop-up", windows[0].querySelector(".popup-avatar img").getAttribute("data-hc-identity") === "media" && windows[0].querySelector(".popup-title").getAttribute("data-hc-identity") === "text");
+		check("pop-up identity: close button and the other pop-up untouched", !windows[0].querySelector('[aria-label="Close chat"]').hasAttribute("data-hc-identity") && !windows[1].querySelector("[data-hc-identity]"));
 	}
 
 	// ---------- right-click details ----------

@@ -165,12 +165,8 @@ function showPageWarning(missingParts) {
 	warning.hidden = false;
 }
 
-fillIcons();
-document.getElementById("version").textContent = `Version ${chrome.runtime.getManifest().version}`;
-themeToggle();
-
-// Nothing about the chats is shown or wired up until the popup is unlocked.
-requireUnlock(async () => {
+// The chats view. Started by main.js once the popup is unlocked.
+async function initChats() {
 	await connectToTab();
 	renderChats(await loadData());
 	updateData();
@@ -186,4 +182,4 @@ requireUnlock(async () => {
 		}
 		renderChats(data);
 	});
-});
+}

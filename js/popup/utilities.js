@@ -1,5 +1,5 @@
-// Helpers shared by the popup (popup.html) and settings (setting.html). Needs icons.js, password.js and
-// storage.js loaded first.
+// Helpers for the popup's views (chats.js, settings.js, main.js). Needs icons.js, password.js and storage.js
+// loaded first.
 const storage = chrome.storage.local;
 
 // How long an unlock of the popup and settings pages lasts.
@@ -32,24 +32,33 @@ function animateOut(element, className = "leaving", ms = 250) {
 
 // ---------- theme ----------
 
+// Applies a theme, and keeps a copy in localStorage so theme.js can apply it before the next first paint.
 function showTheme(dark) {
 	if (dark) document.documentElement.classList.add("dark");
 	else document.documentElement.classList.remove("dark");
-	const button = document.getElementById("toggle-theme");
-	button.setAttribute("data-icon", dark ? "sun" : "moon");
-	fillIcons(button.parentElement);
+	try {
+		localStorage.setItem("hmc-theme", dark ? "dark" : "light");
+	} catch {
+		// Only a convenience; the theme still comes from chrome.storage.
+	}
+	document.querySelectorAll(".theme-toggle").forEach((button) => {
+		button.setAttribute("data-icon", dark ? "sun" : "moon");
+		button.innerHTML = icon(dark ? "sun" : "moon");
+	});
 }
 
-// Applies the saved theme, and saves the new one each time the theme button is clicked.
+// Applies the saved theme, and saves the new one each time a theme button is clicked.
 function themeToggle() {
 	storage.get(null, (data) => showTheme(data.preferences?.userTheme === "dark"));
-	document.getElementById("toggle-theme").addEventListener("click", () => {
-		const dark = !document.documentElement.classList.contains("dark");
-		showTheme(dark);
-		storage.get(null, (data) => {
-			if (!data.preferences) return;
-			data.preferences.userTheme = dark ? "dark" : "light";
-			storage.set(data);
+	document.querySelectorAll(".theme-toggle").forEach((button) => {
+		button.addEventListener("click", () => {
+			const dark = !document.documentElement.classList.contains("dark");
+			showTheme(dark);
+			storage.get(null, (data) => {
+				if (!data.preferences) return;
+				data.preferences.userTheme = dark ? "dark" : "light";
+				storage.set(data);
+			});
 		});
 	});
 }

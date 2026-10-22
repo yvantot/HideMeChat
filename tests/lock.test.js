@@ -1,6 +1,8 @@
 // Locking: the lock screen in the page, its extension frame (html/lock.html), and locked pop-ups.
 const { contentWorld, pageWorld, messagesPage, popup, chat, stored, errors, hashPassword, verifyPassword, waitFor } = require("./support/helpers");
 
+// Messages the frame posted to say the chat is unlocked (it also posts its size).
+const unlocks = (w) => w.posted.filter((m) => m.hidechat === "unlocked");
 const lockedChats = () => [chat("2", { isObfuscated: true }), chat("4", { isLocked: true }), chat("e5", { isLocked: true })];
 
 module.exports = async (check) => {
@@ -18,6 +20,12 @@ module.exports = async (check) => {
 		const frame = screen?.querySelector("iframe");
 		check("locked: <html> flagged, lock screen first in main", html.hasAttribute("data-hc-locked") && w.doc.querySelector('[role="main"]').firstChild === screen);
 		check("locked: form is an extension frame for this chat", frame?.getAttribute("src") === "chrome-extension://fakeid/html/lock.html?chat=%2Ft%2F4%2F");
+		check("locked: frame shares the card's color scheme (no backdrop)", /color-scheme: light;/.test(frame.getAttribute("style")) && screen.getAttribute("data-scheme") === "light");
+		w.fireWindow("message", { origin: "chrome-extension://fakeid", source: frame.contentWindow, data: { hidechat: "size", width: 300.4, height: 251.2 } });
+		check("locked: frame fitted to the card's reported size", frame.getAttribute("style") === "color-scheme: light; width: 300px; height: 251px;", frame.getAttribute("style"));
+		w.fireWindow("message", { origin: "https://www.facebook.com", source: frame.contentWindow, data: { hidechat: "size", width: 2000, height: 2000 } });
+		w.fireWindow("message", { origin: "chrome-extension://fakeid", source: frame.contentWindow, data: { hidechat: "size", width: 5000, height: -3 } });
+		check("locked: sizes from the page ignored, odd sizes kept in bounds", frame.getAttribute("style") === "color-scheme: light; width: 640px; height: 120px;", frame.getAttribute("style"));
 		check("locked: no password field in the page itself", w.doc.querySelectorAll("input").length === 0);
 		check("locked: page's own inline style untouched", w.doc.querySelector('[role="main"]').getAttribute("style") === "width: 10px");
 		const lockCss = w.doc.getElementById("hidechat-lockedchat").textContent;
@@ -54,6 +62,21 @@ module.exports = async (check) => {
 		check("quick switch between locked chats: one fresh lock screen", screens.length === 1 && screens[0].getAttribute("data-chat") === "/e2ee/t/5/" && !screens[0].hasAttribute("data-leaving"));
 	}
 	{
+		// Something removed the frame (another extension, say): the chat stays covered and the lock screen is
+		// rebuilt, at most once a second.
+		const w = contentWorld("https://www.messenger.com/t/4", messagesPage("messenger", ["4"]), stored(lockedChats(), { password: record }));
+		w.run("var fakeNow = Date.now(); Date.now = () => fakeNow;");
+		w.doc.querySelector("#hc-lockedmain iframe").remove();
+		w.fireObservers();
+		check("frame removed: chat stays covered, no rebuild within a second", w.doc.documentElement.hasAttribute("data-hc-locked") && w.doc.querySelectorAll("#hc-lockedmain").length === 1 && !w.doc.querySelector("#hc-lockedmain iframe"));
+		w.run("fakeNow += 1100;");
+		w.fireObservers();
+		const frames = w.doc.querySelectorAll("#hc-lockedmain iframe");
+		check("frame removed: rebuilt with a new frame after a second", w.doc.querySelectorAll("#hc-lockedmain").length === 1 && frames.length === 1 && /chat=%2Ft%2F4%2F/.test(frames[0].getAttribute("src")));
+		w.fireObservers();
+		check("frame removed: not rebuilt again once it's back", w.doc.querySelector("#hc-lockedmain iframe") === frames[0]);
+	}
+	{
 		const w = contentWorld("https://www.facebook.com/", `<div class="tabs">${popup("Name 4")}${popup("Name 9")}</div>`, stored(lockedChats(), { password: record }));
 		const areas = w.doc.querySelectorAll("[data-mw-file-dropzone]");
 		const note = [...areas[0].children].find((c) => c.getAttribute("class") === "hc-popup-lock");
@@ -72,14 +95,16 @@ module.exports = async (check) => {
 		const w = pageWorld("lock", frameUrl, stored(lockedChats(), { password: record, userTheme: "dark" }));
 		await waitFor(() => !w.doc.getElementById("unlock-form").hidden);
 		check("frame: unlock form when a password exists, in the saved theme", w.doc.getElementById("create-form").hidden && w.doc.documentElement.classList.contains("dark"));
+		check("frame: reports its card size to the page", w.posted.some((m) => m.hidechat === "size" && "width" in m && "height" in m));
+		check("frame: theme copy kept for its next first paint", w.localStorage.get("hmc-theme") === "dark");
 		check("frame: icon drawn", !!w.doc.querySelector(".lock-badge svg"));
 		const input = w.doc.getElementById("unlock-password");
 		input.value = "wrong";
 		await w.doc.getElementById("unlock-form").dispatch("submit");
-		check("frame: wrong password says so, shakes, posts nothing", w.doc.getElementById("unlock-message").textContent === "Wrong password." && w.doc.getElementById("unlock-form").classList.contains("shake") && w.posted.length === 0);
+		check("frame: wrong password says so, shakes, posts nothing", w.doc.getElementById("unlock-message").textContent === "Wrong password." && w.doc.getElementById("unlock-form").classList.contains("shake") && unlocks(w).length === 0);
 		input.value = "hunter22";
 		await w.doc.getElementById("unlock-form").dispatch("submit");
-		check("frame: right password tells the page which chat", JSON.stringify(w.posted) === JSON.stringify([{ hidechat: "unlocked", chat: "/t/4/" }]));
+		check("frame: right password tells the page which chat", JSON.stringify(unlocks(w)) === JSON.stringify([{ hidechat: "unlocked", chat: "/t/4/" }]));
 	}
 	{
 		const w = pageWorld("lock", frameUrl, { preferences: { userPassword: "oldpass1" }, messengerChats: lockedChats() });
@@ -87,7 +112,7 @@ module.exports = async (check) => {
 		check("frame: v2 data upgraded, password hashed", w.storage.schemaVersion === 3 && !JSON.stringify(w.storage).includes("oldpass1"));
 		w.doc.getElementById("unlock-password").value = "oldpass1";
 		await w.doc.getElementById("unlock-form").dispatch("submit");
-		check("frame: the v2 password still unlocks", w.posted.length === 1);
+		check("frame: the v2 password still unlocks", unlocks(w).length === 1);
 	}
 	{
 		const w = pageWorld("lock", frameUrl, stored(lockedChats()));

@@ -2,6 +2,8 @@
 const unlockedChats = new Set();
 // "chrome-extension://<id>", the origin of messages from the lock frame.
 const EXTENSION_ORIGIN = chrome.runtime.getURL("").replace(/\/$/, "");
+// When the lock screen was last built, so a missing frame isn't rebuilt more than once a second.
+let lastLockScreenBuilt = 0;
 
 function lockedChats(data) {
 	return data.messengerChats.filter((chat) => chat.isLocked);
@@ -24,10 +26,19 @@ function updateLock(data) {
 	if (!host) return;
 	setFlag(host, "data-hc-lock-host", true);
 
+	const scheme = data.preferences.userTheme === "dark" ? "dark" : "light";
 	const existing = document.getElementById("hc-lockedmain");
-	if (existing?.parentElement === host && existing.getAttribute("data-chat") === chat && !isLeaving(existing)) return;
+	const current =
+		existing?.parentElement === host &&
+		existing.getAttribute("data-chat") === chat &&
+		existing.getAttribute("data-scheme") === scheme &&
+		!isLeaving(existing);
+	// If something removed the frame, the chat would stay covered with no way to unlock it, so the lock screen
+	// is rebuilt, at most once a second.
+	if (current && (existing.querySelector("iframe") || Date.now() - lastLockScreenBuilt < 1000)) return;
 	existing?.remove();
-	host.insertBefore(lockScreen(chat), host.firstChild);
+	host.insertBefore(lockScreen(chat, scheme), host.firstChild);
+	lastLockScreenBuilt = Date.now();
 }
 
 function isLeaving(element) {
@@ -45,27 +56,42 @@ function removeLockScreen() {
 }
 
 // The form itself is an extension page in a frame (html/lock.html), out of reach of the page's scripts.
-function lockScreen(chat) {
+// Chrome paints an opaque backdrop behind a frame whose color-scheme differs from the frame element's, so the
+// element gets the same scheme as the card inside; the frame reports the card's size to fit it exactly.
+function lockScreen(chat, scheme) {
 	const screen = document.createElement("div");
 	screen.setAttribute("id", "hc-lockedmain");
 	screen.setAttribute("data-chat", chat);
+	screen.setAttribute("data-scheme", scheme);
 	const frame = document.createElement("iframe");
 	frame.setAttribute("title", "Hide Me Chat lock screen");
 	frame.setAttribute("src", chrome.runtime.getURL(`html/lock.html?chat=${encodeURIComponent(chat)}`));
+	frame.setAttribute("style", frameStyle(scheme, 300, 260));
 	frame.addEventListener("load", () => frame.focus());
 	screen.appendChild(frame);
 	return screen;
 }
 
-// The lock frame posts a message when the right password is entered. Only messages from this extension's
-// origin and the current lock frame count; the page itself can't fake either.
-function listenForUnlock(onUnlock) {
+function frameStyle(scheme, width, height) {
+	return `color-scheme: ${scheme}; width: ${width}px; height: ${height}px;`;
+}
+
+// Messages from the lock frame: its card size, and "unlocked" once the right password is entered. Only messages
+// from this extension's origin and the current lock frame count; the page itself can't fake either.
+function listenToLockFrame(onUnlock) {
 	window.addEventListener("message", (event) => {
-		if (event.origin !== EXTENSION_ORIGIN || event.data?.hidechat !== "unlocked") return;
+		if (event.origin !== EXTENSION_ORIGIN) return;
 		const screen = document.getElementById("hc-lockedmain");
-		if (!screen || isLeaving(screen) || event.source !== screen.querySelector("iframe")?.contentWindow) return;
-		unlockedChats.add(screen.getAttribute("data-chat"));
-		onUnlock();
+		const frame = screen?.querySelector("iframe");
+		if (!screen || isLeaving(screen) || event.source !== frame?.contentWindow) return;
+
+		if (event.data?.hidechat === "size") {
+			const fit = (value) => Math.min(Math.max(Math.round(Number(value) || 0), 120), 640);
+			frame.setAttribute("style", frameStyle(screen.getAttribute("data-scheme"), fit(event.data.width), fit(event.data.height)));
+		} else if (event.data?.hidechat === "unlocked") {
+			unlockedChats.add(screen.getAttribute("data-chat"));
+			onUnlock();
+		}
 	});
 }
 
@@ -124,6 +150,7 @@ const LOCK_CSS = `
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		border-radius: 14px;
 		background-color: rgba(18, 20, 30, 0.45);
 		backdrop-filter: blur(18px);
 		animation: hc-fade-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -134,13 +161,19 @@ const LOCK_CSS = `
 		pointer-events: none;
 	}
 	#hc-lockedmain iframe {
-		width: 360px;
-		max-width: 100%;
-		height: 440px;
-		max-height: 100%;
+		max-width: calc(100% - 32px);
+		max-height: calc(100% - 32px);
 		border: none;
+		border-radius: 20px;
 		background: transparent;
-		color-scheme: normal;
+		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+		animation: hc-pop-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+	}
+	@keyframes hc-pop-in {
+		from {
+			opacity: 0;
+			transform: scale(0.96) translateY(6px);
+		}
 	}
 	[data-hc-popup-locked] {
 		position: relative !important;
@@ -183,6 +216,7 @@ const LOCK_CSS = `
 	}
 	@media (prefers-reduced-motion: reduce) {
 		#hc-lockedmain,
+		#hc-lockedmain iframe,
 		.hc-popup-lock {
 			animation: none;
 			transition: none;
