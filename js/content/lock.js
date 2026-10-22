@@ -22,7 +22,7 @@ function updateLock(data) {
 		return;
 	}
 
-	const host = document.querySelector('[role="main"]') ?? Page.conversation();
+	const host = Page.locate.conversation().element;
 	if (!host) return;
 	setFlag(host, "data-hc-lock-host", true);
 
@@ -101,7 +101,7 @@ function markLockedPopups(data) {
 	const locked = lockedChats(data);
 	Page.openChats().forEach(({ log, chatUrl, title }) => {
 		if (chatUrl) return;
-		const area = log.closest("[data-mw-file-dropzone]");
+		const area = Parts.closest(log, "popupChat");
 		if (!area) return;
 		const chat = locked.find((c) => c.chatName === title);
 		const isLocked = !!chat && !unlockedChats.has(chat.chatURL);
@@ -129,8 +129,8 @@ function popupLockNote(chatUrl) {
 function lockedRowsCSS(chats) {
 	const previews = chats
 		.filter((chat) => chat.isLocked)
-		.flatMap((chat) => Page.chatLinkSelector(chat.chatURL).split(", "))
-		.map((link) => `${link} span[dir="auto"] ~ div`);
+		.flatMap((chat) => Page.chatLinkSelectors(chat.chatURL))
+		.map((link) => `${link} ${Parts.css("chatName")} ~ div`);
 	if (previews.length === 0) return "";
 	return `${previews.join(", ")} { visibility: hidden !important; }`;
 }

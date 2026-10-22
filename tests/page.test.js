@@ -1,5 +1,9 @@
-// js/content/page.js: page detection and the anchors, on synthetic pages and on sanitized live captures.
+// js/content/page.js: page detection and finding the page's parts, on synthetic pages and on sanitized live captures.
 const { read, CLASSES, contentWorld, messagesPage, facebookHome, chatHref, stored, chat } = require("./support/helpers");
+
+// How the parts a messages page with an open chat needs were found.
+const core = (health) => ["chatList", "conversation", "messageLog", "messageRow"].map((name) => health.parts[name]).join();
+const allMain = (health) => Object.values(health.parts).every((status) => status === "main" || status === "none");
 
 const fixture = (name) => read(`tests/fixtures/${name}.html`).replace(/^[\s\S]*?<body>/, "").replace(/<\/body>[\s\S]*$/, "");
 
@@ -18,7 +22,7 @@ module.exports = async (check) => {
 	}
 	{
 		const w = contentWorld("https://www.facebook.com/messages/t/1", "");
-		check("chatLinkSelector", w.run(`Page.chatLinkSelector("/t/1/")`) === `[role="grid"] a[href='/messages/t/1/'], div[class='x1n2onr6'] a[href='/messages/t/1/']`);
+		check("chatLinkSelectors: one per way of finding the chat list area", JSON.stringify(w.run(`Page.chatLinkSelectors("/t/1/")`)) === JSON.stringify([`[role="grid"] a[href='/messages/t/1/']`, `div[class='x1n2onr6'] a[href='/messages/t/1/']`]));
 	}
 
 	// ---------- synthetic messages pages ----------
@@ -31,11 +35,11 @@ module.exports = async (check) => {
 		check(`${site}: open chat identified by the URL`, JSON.stringify(w.run("Page.openChats().map(c => [c.chatUrl, c.title])")) === '[["/t/2/",null]]');
 		check(`${site}: findChatLink`, w.run(`Page.findChatLink("/t/3/")?.getAttribute("href")`) === chatHref(site, "3"));
 		const health = w.run("Page.health()");
-		check(`${site}: health ok`, health.ok && health.chatOpen && JSON.stringify(health.parts) === '{"chatList":"anchor","conversation":"anchor","messages":"anchor"}', JSON.stringify(health));
+		check(`${site}: health ok`, health.ok && health.chatOpen && core(health) === "main,main,main,main" && allMain(health), JSON.stringify(health));
 	}
 	{
 		const w = contentWorld("https://www.facebook.com/messages/t/2", messagesPage("fb", ["1", "2"], { grid: false, virtualized: false }));
-		check("fallback: chat list found by class", w.run("Page.locate.chatList().via") === "fallback" && w.run("Page.health().ok") === true);
+		check("backup: chat list found by class", w.run("Page.health().parts.chatList") === "backup 1" && w.run("Page.health().ok") === true);
 	}
 	{
 		const w = contentWorld("https://www.facebook.com/messages/t/2", messagesPage("fb", ["1", "2"], { grid: false, classes: false }));
@@ -43,7 +47,7 @@ module.exports = async (check) => {
 	}
 	{
 		const w = contentWorld("https://www.facebook.com/messages/t/2", messagesPage("fb", ["1"]).replace(/<div role="main"[\s\S]*$/, ""));
-		check("missing conversation reported", w.run("Page.health().missing.join()") === "conversation,messages");
+		check("missing conversation reported", w.run("Page.health().missing.join()") === "conversation,messageLog,messageRow");
 	}
 	{
 		const w = contentWorld("https://www.messenger.com/", messagesPage("messenger", ["1"]).replace(/<div role="main"[\s\S]*$/, '<div role="main"></div>'));
@@ -71,7 +75,7 @@ module.exports = async (check) => {
 	{
 		const w = contentWorld("https://www.facebook.com/messages/t/1002", fixture("facebook-messages"));
 		const health = w.run("Page.health()");
-		check("live facebook.com/messages: every part found by its anchor", health.ok && JSON.stringify(health.parts) === '{"chatList":"anchor","conversation":"anchor","messages":"anchor"}', JSON.stringify(health));
+		check("live facebook.com/messages: every part found by its main way", health.ok && core(health) === "main,main,main,main" && allMain(health), JSON.stringify(health));
 		check("live facebook.com/messages: four chat rows in the list", w.run("Page.chatList().children.length") >= 4 && w.run(`Page.findChatLink("/e2ee/t/1001/") !== null`));
 		check("live facebook.com/messages: chat details read, with the time", JSON.stringify(w.run(`getChatInfo(Page.findChatLink("/t/1002/"))`)) === JSON.stringify({ url: "/t/1002/", img: "https://www.facebook.com/messages/t/img.png", name: "Text 3", lastMsg: "1h" }), JSON.stringify(w.run(`getChatInfo(Page.findChatLink("/t/1002/"))`)));
 		check("live facebook.com/messages: stories-like class on message rows doesn't count as a chat list", w.run("Page.chatLists().length") === 1);
@@ -79,7 +83,7 @@ module.exports = async (check) => {
 	{
 		const w = contentWorld("https://www.messenger.com/e2ee/t/1001", fixture("messenger"));
 		const health = w.run("Page.health()");
-		check("live messenger.com: every part found by its anchor", health.ok && JSON.stringify(health.parts) === '{"chatList":"anchor","conversation":"anchor","messages":"anchor"}', JSON.stringify(health));
+		check("live messenger.com: every part found by its main way", health.ok && core(health) === "main,main,main,main" && allMain(health), JSON.stringify(health));
 		check("live messenger.com: open e2ee chat identified", JSON.stringify(w.run("Page.openChats().map(c => c.chatUrl)")) === '["/e2ee/t/1001/"]');
 		check("live messenger.com: all chat details read", w.run("getAllChat().map(c => c.url + ':' + c.lastMsg).join()") === "/e2ee/t/1001/:1m,/t/1002/:1h,/t/1003/:5h,/t/1004/:9h");
 	}

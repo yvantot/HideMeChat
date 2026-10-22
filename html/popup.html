@@ -9,7 +9,9 @@
 		<script src="../js/shared/icons.js" defer></script>
 		<script src="../js/shared/password.js" defer></script>
 		<script src="../js/shared/storage.js" defer></script>
+		<script src="../js/shared/pageParts.js" defer></script>
 		<script src="../js/popup/utilities.js" defer></script>
+		<script src="../js/popup/report.js" defer></script>
 		<script src="../js/popup/chats.js" defer></script>
 		<script src="../js/popup/settings.js" defer></script>
 		<script src="../js/popup/main.js" defer></script>
@@ -39,7 +41,14 @@
 				<button class="icon-button" type="button" data-go="settings" title="Settings" aria-label="Settings" data-icon="settings"></button>
 			</header>
 
-			<p id="page-health" class="notice" role="status" hidden></p>
+			<div id="page-health" class="notice" role="status" hidden>
+				<p id="page-health-text"></p>
+				<p id="page-health-hint" class="notice-hint">Layout fixes are small page rules from Hide Me Chat's GitHub page, checked once a day. GitHub sees your IP address; nothing else is sent. You can turn them off in Settings.</p>
+				<div class="row start">
+					<button type="button" id="get-fixes" class="button small">Get layout fixes</button>
+					<button type="button" class="button small copy-report">Copy report</button>
+				</div>
+			</div>
 
 			<main class="card">
 				<div class="card-head">
@@ -154,6 +163,35 @@
 						<button type="button" id="import-replace" class="button primary">Replace</button>
 					</span>
 				</div>
+			</section>
+
+			<section class="card">
+				<div class="row">
+					<div>
+						<h2>Layout fixes</h2>
+						<p class="hint">When Messenger changes its layout, get fixes from Hide Me Chat's GitHub page once a day. They're page rules, never code. GitHub sees your IP address; nothing else is sent.</p>
+					</div>
+					<label class="switch" title="Get layout fixes">
+						<input type="checkbox" id="layout-fixes" aria-label="Get layout fixes" />
+						<span class="track"></span>
+					</label>
+				</div>
+				<div class="row spaced">
+					<p id="layout-fixes-status" class="hint" role="status"></p>
+					<button type="button" id="check-fixes" class="button small" hidden>Check now</button>
+				</div>
+			</section>
+
+			<section class="card">
+				<h2>Report a problem</h2>
+				<p class="hint">Copies what Hide Me Chat sees on this tab: how it finds each part of the page, and any errors. No names, messages or links.</p>
+				<div class="row start spaced">
+					<button type="button" class="button copy-report">Copy report</button>
+				</div>
+				<details id="report-details" class="report">
+					<summary>Show the report</summary>
+					<pre id="report-preview"></pre>
+				</details>
 			</section>
 		</section>
 

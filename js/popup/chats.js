@@ -2,6 +2,10 @@ const chatList = document.getElementById("hiddenContainer");
 const chatCounter = document.getElementById("chatCount");
 const emptyState = document.getElementById("empty-state");
 const hiddenSwitch = document.getElementById("toggle-hiddenall");
+const warning = document.getElementById("page-health");
+const warningText = document.getElementById("page-health-text");
+const fixesHint = document.getElementById("page-health-hint");
+const fixesButton = document.getElementById("get-fixes");
 
 // Chat links open on the site of the active tab, or messenger.com.
 let chatSiteBase = "https://www.messenger.com";
@@ -118,7 +122,7 @@ async function toggleFlag(chatUrl, flag) {
 // Refreshes the name, picture and last message of stored chats from the chat list in the active tab.
 function updateData() {
 	chrome.runtime.sendMessage({ message: "updateChats" }, async (chats) => {
-		if (chrome.runtime.lastError || !chats) return;
+		if (chrome.runtime.lastError || !Array.isArray(chats)) return;
 		const data = await loadData();
 		let changed = false;
 		chats.forEach((chat) => {
@@ -157,16 +161,50 @@ async function connectToTab() {
 	});
 }
 
-function showPageWarning(missingParts) {
-	const partNames = { chatList: "chat list", conversation: "open chat", messages: "messages" };
-	const missing = missingParts.map((part) => partNames[part] ?? part).join(", ");
-	const warning = document.getElementById("page-health");
-	warning.textContent = `Hide Me Chat can't find the ${missing} on this page. Messenger may have changed its layout, so some features may not work until Hide Me Chat is updated.`;
+// Warns that the page is missing parts Hide Me Chat needs, and offers layout fixes and the report.
+async function showPageWarning(missingParts) {
+	const missing = missingParts.map((part) => PAGE_PARTS[part]?.label ?? part).join(", ");
+	warningText.textContent = `Hide Me Chat can't find the ${missing} on this page. Messenger may have changed its layout, so some features may not work until that's fixed.`;
+	const { preferences } = await loadData();
+	showFixesOffer(!preferences.layoutFixes);
 	warning.hidden = false;
+}
+
+// Before layout fixes are on, the warning says what turning them on means.
+function showFixesOffer(off) {
+	fixesButton.textContent = off ? "Get layout fixes" : "Check for fixes";
+	fixesHint.hidden = !off;
+}
+
+// Turns layout fixes on if needed and checks GitHub now, then looks at the page again once it has had a moment
+// to pick up new rules.
+async function getLayoutFixes() {
+	fixesButton.disabled = true;
+	const { preferences } = await loadData();
+	if (!preferences.layoutFixes) await setLayoutFixes(true);
+	const result = await requestPageRules();
+	showFixesOffer(false);
+	if (!result.ok) {
+		fixesButton.disabled = false;
+		showToast(result.error);
+		return;
+	}
+	await new Promise((resolve) => setTimeout(resolve, 600));
+	const health = await askActiveTab({ message: "health" });
+	fixesButton.disabled = false;
+	if (health?.ok) {
+		await animateOut(warning);
+		warning.hidden = true;
+		warning.classList.remove("leaving");
+		showToast("Fixed by the latest layout rules");
+	} else {
+		warningText.textContent = "There's no fix for this yet. Copy the report to describe what's wrong.";
+	}
 }
 
 // The chats view. Started by main.js once the popup is unlocked.
 async function initChats() {
+	fixesButton.addEventListener("click", () => getLayoutFixes());
 	await connectToTab();
 	renderChats(await loadData());
 	updateData();

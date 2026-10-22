@@ -48,4 +48,16 @@ module.exports = async (check) => {
 		await w.run("replaceStoredData(next)");
 		check("replaceStoredData drops keys the new data doesn't have", !("leftover" in w.storage) && w.storage.messengerChats.length === 1);
 	}
+	{
+		// The layout rules from GitHub belong to this browser: not part of the data that's saved back or replaced.
+		const device = { pageRules: { version: "v1", parts: {}, skipped: 0 }, rulesCheck: { at: 1, ok: true } };
+		const w = storageWorld({ schemaVersion: 3, preferences: prefs(), messengerChats: [], ...device });
+		const data = await w.run("loadData()");
+		check("layout rules left out of the loaded data", !("pageRules" in data) && !("rulesCheck" in data) && "pageRules" in w.storage);
+		w.ctx.next = { schemaVersion: 3, preferences: prefs(), messengerChats: [chat("4")] };
+		await w.run("replaceStoredData(next)");
+		check("layout rules kept when the data is replaced (an import)", JSON.stringify(w.storage.pageRules) === JSON.stringify(device.pageRules) && w.storage.rulesCheck.ok === true);
+		const fresh = await storageWorld({}).run("loadData()");
+		check("layout fixes off by default", fresh.preferences.layoutFixes === false);
+	}
 };

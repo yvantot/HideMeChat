@@ -26,6 +26,7 @@ document.querySelectorAll("[data-go]").forEach((button) => {
 
 // Nothing about the chats or settings is shown or wired up until the popup is unlocked.
 requireUnlock(async () => {
+	document.querySelectorAll(".copy-report").forEach((button) => button.addEventListener("click", () => copyReport()));
 	await initChats();
 	await initSettings();
 });

@@ -137,6 +137,69 @@ module.exports = async (check) => {
 		check("v1 backups import too", fresh.storage.messengerChats.map((c) => c.chatURL).join() === "/t/5/" && !("hidden_chat" in fresh.storage));
 	}
 
+	// ---------- layout fixes and the report ----------
+	{
+		const w = await open({ ...stored([chat("1", { isHidden: true, chatName: "Secret Name" })]), pageRules: { version: "old", parts: {}, skipped: 0 } });
+		const $ = (id) => w.doc.getElementById(id);
+		await settleAll();
+		check("layout fixes: off by default, and says it connects to nothing", !$("layout-fixes").checked && $("check-fixes").hidden && $("layout-fixes-status").textContent === "Off. Hide Me Chat doesn't connect to anything.", $("layout-fixes-status").textContent);
+
+		w.runtimeResponses.pageRulesFetch = { ok: true, version: "2026-11-03", changed: true };
+		$("layout-fixes").checked = true;
+		await $("layout-fixes").dispatch("change");
+		await settleAll();
+		check("turning on: saved, and GitHub checked straight away", w.storage.preferences.layoutFixes === true && w.log.includes('runtime.sendMessage {"message":"pageRulesFetch"}') && $("toast").textContent === "Got new layout fixes");
+
+		const at = Date.now();
+		w.storage.pageRules = { version: "2026-11-03", parts: { messageRow: { ways: ["x"], replace: false } }, skipped: 0 };
+		w.storage.rulesCheck = { at, ok: true, version: "2026-11-03", changed: true };
+		w.listeners.storageChanged.forEach((f) => f({ pageRules: {} }, "local"));
+		await settleAll();
+		const time = new Date(at).toTimeString().slice(0, 5);
+		check("status: the fixes in use and the last check", $("layout-fixes-status").textContent === `On. Using fixes from 2026-11-03. Checked today at ${time}.` && !$("check-fixes").hidden, $("layout-fixes-status").textContent);
+		w.storage.rulesCheck = { at, ok: false, error: "Couldn't reach GitHub." };
+		w.listeners.storageChanged.forEach((f) => f({ rulesCheck: {} }, "local"));
+		await settleAll();
+		check("status: a failed check, with the fixes still in use", $("layout-fixes-status").textContent === `On. The check today at ${time} failed: Couldn't reach GitHub. Using fixes from 2026-11-03.`, $("layout-fixes-status").textContent);
+
+		w.runtimeResponses.pageRulesFetch = { ok: true, version: "2026-11-03", changed: false };
+		await $("check-fixes").dispatch("click");
+		await settleAll();
+		check("check now: says when nothing changed", $("toast").textContent === "Layout fixes are up to date");
+		w.runtimeResponses.pageRulesFetch = { ok: false, error: "GitHub answered with error 404." };
+		await $("check-fixes").dispatch("click");
+		await settleAll();
+		check("check now: says what went wrong", $("toast").textContent === "GitHub answered with error 404." && !$("check-fixes").disabled);
+
+		await $("export-data").dispatch("click");
+		const exported = Buffer.from(w.blobs[0], "base64").toString("utf8");
+		check("export: the setting is in the backup, the rules aren't", exported.includes('"layoutFixes": true') && !exported.includes("pageRules") && !exported.includes("rulesCheck"));
+
+		$("layout-fixes").checked = false;
+		await $("layout-fixes").dispatch("change");
+		await settleAll();
+		check("turning off: saved, and the rules forgotten", w.storage.preferences.layoutFixes === false && !("pageRules" in w.storage) && !("rulesCheck" in w.storage));
+
+		w.tabs = [{ id: 7, url: "https://www.facebook.com/messages/t/1" }];
+		w.tabResponses.health = {
+			kind: "facebook-messages",
+			chatOpen: true,
+			ok: false,
+			missing: ["messageRow"],
+			parts: { chatList: "main", messageRow: "missing", messageText: "backup 1" },
+			rules: null,
+			loadedAt: at,
+			log: [{ kind: "error", text: "page update: TypeError: x is null", first: at, last: at, count: 3 }],
+		};
+		$("report-details").setAttribute("open", "");
+		await $("report-details").dispatch("toggle");
+		await settleAll();
+		const preview = $("report-preview").textContent;
+		check("report preview: made when opened", /^Hide Me Chat 3\.0\.0, Chrome 141, Windows/.test(preview) && preview.includes("  message rows: not found, and this page needs it") && preview.includes("Error in page update: TypeError: x is null"), preview);
+		check("report preview: no chat names or links", !/Secret Name|\/t\/1/.test(preview));
+		check("layout fixes and report: no errors", errors(w).length === 0, errors(w).join(" | "));
+	}
+
 	// ---------- gate ----------
 	{
 		const w = await open(stored([], { password: record }), {});

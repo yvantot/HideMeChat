@@ -9,8 +9,14 @@ const BLACK_BAR =
 // Message parts that get the text or media style. Text: the message, stickers, quoted replies, sender names and
 // "… replied to you" (h4), and attachment cards (links inside the text are already covered by it). Media is
 // styled through the element wrapping it: photos, videos, avatars and read receipts.
-const OBF_TEXT = `${SELECTORS.MESSAGEROW} :is(${SELECTORS.TEXT}, ${SELECTORS.STICKERS}, ${SELECTORS.REPLYTEXT}, h4, a[role="link"]:not(${SELECTORS.TEXT} *))`;
-const OBF_MEDIA = `${SELECTORS.MESSAGEROW} :is(div:has(> img), span:has(> img), div:has(> video), div:has(> a > img))`;
+function obfuscatedText() {
+	const text = Parts.css("messageText");
+	return `${Parts.css("messageRow")} :is(${text}, ${Parts.css("sticker")}, ${Parts.css("replyText")}, h4, a[role="link"]:not(${text} *))`;
+}
+
+function obfuscatedMedia() {
+	return `${Parts.css("messageRow")} :is(div:has(> img), span:has(> img), div:has(> video), div:has(> a > img))`;
+}
 
 // Stylesheet for obfuscated chats:
 //   - the messages of open chats whose log is marked data-hc-obfuscated (see markOpenChats);
@@ -28,14 +34,14 @@ function obfuscationCSS(chats, obfMethod) {
 	};
 
 	let css =
-		rule(`[data-hc-obfuscated] ${OBF_TEXT}`, text) +
-		rule(`[data-hc-obfuscated] ${OBF_MEDIA}`, media) +
+		rule(`[data-hc-obfuscated] ${obfuscatedText()}`, text) +
+		rule(`[data-hc-obfuscated] ${obfuscatedMedia()}`, media) +
 		rule(`[data-hc-identity="text"]`, text) +
 		rule(`[data-hc-identity="media"]`, media);
 
 	const links = chats
 		.filter((chat) => chat.isObfuscated)
-		.flatMap((chat) => Page.chatLinkSelector(chat.chatURL).split(", "));
+		.flatMap((chat) => Page.chatLinkSelectors(chat.chatURL));
 	if (links.length) {
 		css += rule(links.map((link) => `${link} > div`).join(", "), text);
 		css += rule(links.map((link) => `${link} :is(img, svg:has(image))`).join(", "), media);
@@ -136,7 +142,7 @@ function markOpenChats(chats) {
 function markAtRules() {
 	const rules = { "@pxl": "data-obfpxl", "@blr": "data-obfblr", "@flp": "data-obfflp", "@dim": "data-obfdim" };
 
-	document.querySelectorAll(`${SELECTORS.MESSAGEROW} ${SELECTORS.TEXT}`).forEach((message) => {
+	document.querySelectorAll(Parts.inside("messageRow", "messageText")).forEach((message) => {
 		const text = message.textContent;
 		for (const [rule, attribute] of Object.entries(rules)) {
 			const on = text.includes(rule);

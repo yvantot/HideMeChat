@@ -89,6 +89,12 @@ function createWorld({ root, files, href, state, html }) {
 		tabs: [{ id: 7, url: href }],
 		tabResponses: {},
 		runtimeResponse: undefined,
+		// Answers to runtime.sendMessage by message name, before runtimeResponse.
+		runtimeResponses: {},
+		// What fetch() gets: { status, body } or { error } for a network failure.
+		fetchResult: { error: "Failed to fetch" },
+		fetched: [],
+		clipboard: null,
 		observers: [],
 		listeners: { storageChanged: [], localChanged: [], runtimeMessage: [], installed: [], menuClicked: [] },
 		session: {},
@@ -143,7 +149,8 @@ function createWorld({ root, files, href, state, html }) {
 			onInstalled: { addListener: (f) => world.listeners.installed.push(f) },
 			sendMessage(msg, cb) {
 				L(`runtime.sendMessage ${JSON.stringify(msg)}`);
-				if (cb) cb(clone(world.runtimeResponse));
+				const answer = msg.message in world.runtimeResponses ? world.runtimeResponses[msg.message] : world.runtimeResponse;
+				if (cb) cb(clone(answer));
 			},
 		},
 		contextMenus: {
@@ -250,6 +257,24 @@ function createWorld({ root, files, href, state, html }) {
 			postMessage(message, origin) {
 				L(`parent.postMessage ${JSON.stringify(message)} ${origin}`);
 				world.posted.push(message);
+			},
+		},
+		fetch: async (url, options = {}) => {
+			const { signal, ...rest } = options;
+			L(`fetch ${url} ${JSON.stringify(rest)}`);
+			world.fetched.push({ url, options: rest });
+			const result = world.fetchResult;
+			if (result.error) throw new TypeError(result.error);
+			return { ok: result.status >= 200 && result.status < 300, status: result.status, text: async () => result.body };
+		},
+		AbortController,
+		navigator: {
+			userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+			clipboard: {
+				async writeText(text) {
+					L("clipboard.writeText");
+					world.clipboard = text;
+				},
 			},
 		},
 		confirm(msg) {

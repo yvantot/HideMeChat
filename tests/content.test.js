@@ -24,7 +24,7 @@ function reply(w, message) {
 module.exports = async (check) => {
 	{
 		const w = contentWorld("https://www.facebook.com/messages/t/2", messagesPage("fb", ["7", "1", "2", "3", "4", "e5"]), stored(standardChats()));
-		check("no polling timers", !w.log.some((l) => /setInterval|setTimeout/.test(l)));
+		check("no polling: no intervals, just one health check after the page changed", !w.log.some((l) => /setInterval/.test(l)) && w.log.filter((l) => /setTimeout/.test(l)).length === 1 && w.log.some((l) => /^setTimeout 4000 /.test(l)));
 		check("one observer on the whole page", w.log.filter((l) => l === "new MutationObserver").length === 1 && w.log.some((l) => /^observe html\[0\] \{"childList":true,"subtree":true\}/.test(l)));
 
 		check("hide stylesheet", css(w, "hidechat-hidden") === `[role="grid"] a[href='/messages/t/1/'], div[class='x1n2onr6'] a[href='/messages/t/1/'] { display: none !important; }`);
@@ -39,7 +39,7 @@ module.exports = async (check) => {
 		check("obfuscation: media (read receipts too) merges blur and pixelate", /:is\(div:has\(> img\), span:has\(> img\), div:has\(> video\), div:has\(> a > img\)\) \{ filter: blur\(5px\) url\("data:image/.test(obf));
 		check("obfuscation: who the chat is with", obf.includes(`[data-hc-identity="text"] { opacity: 0.3 !important;transform: scaleX(-1) !important; }`) && /\[data-hc-identity="media"\] \{ filter: blur\(5px\)/.test(obf));
 		check("obfuscation: chat-list rows, avatar included", obf.includes(`[role="grid"] a[href='/messages/t/2/'] > div`) && /\[role="grid"\] a\[href='\/messages\/t\/2\/'\] :is\(img, svg:has\(image\)\)[^{]*\{ filter: blur\(5px\)/.test(obf));
-		check("locked chats: previews hidden", css(w, "hidechat-lockedrows").includes(`[role="grid"] a[href='/messages/t/4/'] span[dir="auto"] ~ div`));
+		check("locked chats: previews hidden", css(w, "hidechat-lockedrows").includes(`[role="grid"] a[href='/messages/t/4/'] span[dir='auto'] ~ div`));
 
 		check("open obfuscated chat's log marked", $(w, '[role="log"]').hasAttribute("data-hc-obfuscated"));
 		check("@blr message marked", $$(w, "[data-obfblr='true']").length === 1);

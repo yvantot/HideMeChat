@@ -5,7 +5,7 @@ function pinCSS(chats, pinnedColor) {
 	const pinned = chats.filter((chat) => chat.isPinned);
 	if (pinned.length === 0) return "";
 
-	const highlight = pinned.map((chat) => Page.chatLinkSelector(chat.chatURL)).join(", ");
+	const highlight = pinned.flatMap((chat) => Page.chatLinkSelectors(chat.chatURL)).join(", ");
 	const rows = pinned
 		.map((chat) => `[data-hc-chatlist] > :has(a[href='${Page.chatHref(chat.chatURL)}'])`)
 		.join(", ");

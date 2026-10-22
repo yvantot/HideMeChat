@@ -1,6 +1,8 @@
-importScripts("/js/shared/password.js", "/js/shared/storage.js");
+importScripts("/js/shared/password.js", "/js/shared/storage.js", "/js/shared/pageParts.js");
 
 const storage = chrome.storage.local;
+// How often pages ask for the layout rules on GitHub to be checked, while layout fixes are on.
+const PAGE_RULES_CHECK_HOURS = 24;
 
 function createContexts() {
 	const documentUrlPatterns = ["*://www.messenger.com/*", "*://www.facebook.com/*"];
@@ -89,8 +91,74 @@ function hideAllChatsExcept(linkUrl) {
 	});
 }
 
+// ---------- layout fixes ----------
+
+// Downloads the layout rules from GitHub, checks them (see cleanPageRules) and saves them for the content
+// scripts, which pick them up on their own. Nothing is sent but the request itself: no cookies, no referrer.
+// Resolves with { ok: true, version, changed } or { ok: false, error }, which is also saved as rulesCheck.
+async function fetchPageRules() {
+	const data = await loadData();
+	if (!data.preferences.layoutFixes) return { ok: false, error: "Layout fixes are off." };
+
+	let result;
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), 15000);
+	try {
+		const response = await fetch(PAGE_RULES_URL, {
+			cache: "no-cache",
+			credentials: "omit",
+			referrerPolicy: "no-referrer",
+			signal: controller.signal,
+		}).catch(() => {
+			throw new Error("Couldn't reach GitHub.");
+		});
+		if (!response.ok) throw new Error(`GitHub answered with error ${response.status}.`);
+		const text = await response.text();
+		if (text.length > PAGE_RULES_MAX_LENGTH) throw new Error("The rules file is too big.");
+		let raw;
+		try {
+			raw = JSON.parse(text);
+		} catch {
+			throw new Error("The rules file isn't valid.");
+		}
+		const rules = cleanPageRules(raw, chrome.runtime.getManifest().version);
+		const { pageRules } = await storage.get("pageRules");
+		const changed = JSON.stringify(pageRules ?? null) !== JSON.stringify(rules);
+		if (changed) await storage.set({ pageRules: rules });
+		result = { ok: true, version: rules.version, changed };
+	} catch (error) {
+		result = { ok: false, error: error.name === "AbortError" ? "Couldn't reach GitHub." : error.message };
+	} finally {
+		clearTimeout(timer);
+	}
+	await storage.set({ rulesCheck: { at: Date.now(), ...result } });
+	return result;
+}
+
+// One download at a time, however many tabs ask.
+let pageRulesDownload = null;
+function fetchPageRulesOnce() {
+	pageRulesDownload ??= fetchPageRules().finally(() => (pageRulesDownload = null));
+	return pageRulesDownload;
+}
+
+// Pages ask on load; the rules are downloaded when the last check is old enough.
+async function checkPageRules() {
+	const { preferences, rulesCheck } = await storage.get(["preferences", "rulesCheck"]);
+	if (!preferences?.layoutFixes) return;
+	if (rulesCheck && Date.now() - rulesCheck.at < PAGE_RULES_CHECK_HOURS * 3600000) return;
+	await fetchPageRulesOnce();
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	switch (request.message) {
+		case "pageRulesCheck":
+			checkPageRules().then(() => sendResponse(null));
+			return true;
+		// From the popup: check now, whenever the last check was.
+		case "pageRulesFetch":
+			fetchPageRulesOnce().then(sendResponse);
+			return true;
 		case "updateChats":
 			chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 				const url = tabs[0]?.url ?? "";

@@ -28,7 +28,10 @@
     "content_scripts": [
         {
             "js": [
+                "./js/shared/pageParts.js",
                 "./js/content/utilities.js",
+                "./js/content/health.js",
+                "./js/content/parts.js",
                 "./js/content/page.js",
                 "./js/content/hide.js",
                 "./js/content/pin.js",

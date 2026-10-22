@@ -1,11 +1,7 @@
 // Finds the parts of the page HideMeChat works with: the chat lists, the open conversation and the message logs
-// of open chats (the conversation on messages pages, pop-ups elsewhere). Elements are found through ARIA roles
-// and data attributes first; Meta's generated class names change often, so they're only a fallback.
-const FALLBACK_SELECTORS = {
-	CHATLIST: "div[class='x1n2onr6']",
-	CONVERSATION: "div[class='x78zum5 xdt5ytf x1iyjqo2 xs83m0k x1n2onr6']",
-};
-
+// of open chats (the conversation on messages pages, pop-ups elsewhere). Each part has a few ways to find it
+// (Parts, from shared/pageParts.js): ARIA roles and data attributes first; Meta's generated class names change
+// often, so they're only a backup.
 const Page = {
 	// "messenger" for messenger.com, "facebook-messages" for facebook.com/messages, "facebook" for any other
 	// Facebook page, where chats only show up in the Messenger dropdown and in pop-ups.
@@ -28,23 +24,17 @@ const Page = {
 		return `${Page.isFacebook() ? "/messages" : ""}${chatUrl}`;
 	},
 
-	// CSS selector for a chat's link in any chat list, for stylesheets that must keep matching as rows re-render.
-	chatLinkSelector(chatUrl) {
+	// CSS selectors for a chat's link in any chat list, one for each way of finding the area around chat lists, for
+	// stylesheets that must keep matching as rows re-render.
+	chatLinkSelectors(chatUrl) {
 		const link = `a[href='${Page.chatHref(chatUrl)}']`;
-		return `[role="grid"] ${link}, ${FALLBACK_SELECTORS.CHATLIST} ${link}`;
+		return Parts.selectors("chatListArea").map((area) => `${area} ${link}`);
 	},
 
 	// Every chat list on the page (the main one and the Messenger dropdown): the elements whose children are
 	// the chat rows. The main list comes first.
 	chatLists() {
-		const grids = [...document.querySelectorAll('[role="grid"]')].sort(
-			(a, b) => !!a.closest('[role="dialog"]') - !!b.closest('[role="dialog"]')
-		);
-		const lists = grids.map((grid) => grid.querySelector("[data-virtualized]")?.parentElement).filter(Boolean);
-		if (lists.length) return lists;
-		return [...document.querySelectorAll(FALLBACK_SELECTORS.CHATLIST)].filter((el) =>
-			el.querySelector("a[href*='/t/']")
-		);
+		return Page.locate.chatList().elements.sort((a, b) => !!a.closest('[role="dialog"]') - !!b.closest('[role="dialog"]'));
 	},
 
 	chatList() {
@@ -59,7 +49,7 @@ const Page = {
 		return null;
 	},
 
-	// The area showing the open chat on messages pages. The lock screen covers it.
+	// The area showing the open chat on messages pages.
 	conversation() {
 		return Page.locate.conversation().element;
 	},
@@ -69,7 +59,7 @@ const Page = {
 	// `title` for pop-ups (their header shows the chat's name).
 	openChats() {
 		const conversation = Page.conversation();
-		return [...document.querySelectorAll('[role="log"]')].map((log) =>
+		return Parts.all("messageLog").map((log) =>
 			conversation?.contains(log)
 				? { log, area: conversation, chatUrl: getCurrentChat(), title: null }
 				: { log, area: chatWindow(log), chatUrl: null, title: popupTitle(log) }
@@ -92,7 +82,7 @@ const Page = {
 			let block = heading.parentElement;
 			while (block && block !== area && avatars(block).length === 0) block = block.parentElement;
 			// Visually hidden headings share a block with the whole log or the message box; skip those.
-			if (!block || block === area || block.contains(log) || block.querySelector('[role="textbox"]')) continue;
+			if (!block || block === area || block.contains(log) || Parts.first("messageBox", block)) continue;
 
 			parts.media.push(...avatars(block));
 			for (const child of block.children) {
@@ -108,7 +98,7 @@ const Page = {
 		}
 
 		if (column) {
-			const composer = area.querySelector('[role="textbox"]');
+			const composer = Parts.first("messageBox", area);
 			for (const button of column.querySelectorAll('[role="button"]')) {
 				if (log.contains(button) || button.contains(log) || (composer && button.contains(composer))) continue;
 				if (!button.textContent.trim() || avatars(button).length) continue;
@@ -119,48 +109,62 @@ const Page = {
 		return parts;
 	},
 
-	// Each locator returns { element, via }: via is "anchor", "fallback", or null when nothing was found.
+	// Locators for the parts that need more than a selector. Each returns what it found and the way that found it.
 	locate: {
+		// { elements, way }
 		chatList() {
-			const list = Page.chatList();
-			if (!list) return found(null);
-			return found(list, list.closest('[role="grid"]') ? "anchor" : "fallback");
+			return Parts.find("chatList");
 		},
 
+		// { element, way }: the first element found by the conversation's ways that holds a message log, or the
+		// first one found while the chat is still loading. The lock screen covers it.
 		conversation() {
-			if (!Page.isMessagesPage()) return found(null);
-			const main = document.querySelector('[role="main"]');
-			if (main?.querySelector('[role="log"]')) return found(main, "anchor");
-			return found(document.querySelector(FALLBACK_SELECTORS.CONVERSATION), "fallback");
-		},
-
-		messages() {
-			const log = Page.conversation()?.querySelector('[role="log"]');
-			return found(log?.querySelector(SELECTORS.MESSAGEROW) ? log : null, "anchor");
+			if (!Page.isMessagesPage()) return { element: null, way: null };
+			let loading = null;
+			for (const way of Parts.ways.conversation) {
+				for (const element of document.querySelectorAll(way.selector)) {
+					if (Parts.first("messageLog", element)) return { element, way };
+					loading ??= { element, way };
+				}
+			}
+			return loading ?? { element: null, way: null };
 		},
 	},
 
-	// Reports which parts were found and how, and whether everything this page needs is there.
+	// Reports how each part was found (see describeStatus), and whether everything this page needs is there.
+	// Parts are looked for where they belong: message rows in the open chat's log, chat names in a chat list.
 	health() {
 		const chatOpen = /\/t\/\d+/.test(location.pathname);
-		const parts = {};
-		for (const [name, locate] of Object.entries(Page.locate)) parts[name] = locate().via ?? "missing";
-
 		const required = [];
 		if (Page.isMessagesPage()) required.push("chatList");
-		if (Page.isMessagesPage() && chatOpen) required.push("conversation", "messages");
-		const missing = required.filter((name) => parts[name] === "missing");
+		if (Page.isMessagesPage() && chatOpen) required.push("conversation", "messageLog", "messageRow");
 
+		const lists = Page.locate.chatList();
+		const conversation = Page.locate.conversation();
+		const logs = Parts.find("messageLog", conversation.element ?? document);
+		const log = logs.elements[0];
+		const found = { chatList: lists.way, conversation: conversation.way, messageLog: logs.way };
+		const within = {
+			chatName: lists.elements[0],
+			messageRow: log,
+			messageText: log,
+			replyText: log,
+			sticker: log,
+			messageBox: conversation.element,
+		};
+
+		const parts = {};
+		for (const name of Object.keys(PAGE_PARTS)) {
+			const way = name in found ? found[name] : Parts.find(name, within[name] ?? document).way;
+			parts[name] = way ? Parts.status(way) : required.includes(name) ? "missing" : "none";
+		}
+		const missing = required.filter((name) => parts[name] === "missing");
 		return { kind: Page.kind(), chatOpen, parts, missing, ok: missing.length === 0 };
 	},
 };
 
-function found(element, via) {
-	return element ? { element, via } : { element: null, via: null };
-}
-
 // A pop-up's title is the first heading in its chat window: the element holding the header and the message
-// area (data-mw-file-dropzone). The message area has hidden headings of its own, so searching outward from
+// area (the popupChat part). The message area has hidden headings of its own, so searching outward from
 // the log would find those first.
 function popupTitle(log) {
 	const heading = chatWindow(log)?.querySelector('h2, [role="heading"]');
@@ -175,5 +179,5 @@ function commonAncestor(a, b) {
 }
 
 function chatWindow(log) {
-	return log.closest("[data-mw-file-dropzone]")?.parentElement ?? null;
+	return Parts.closest(log, "popupChat")?.parentElement ?? null;
 }

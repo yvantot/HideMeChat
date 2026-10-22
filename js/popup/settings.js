@@ -1,4 +1,4 @@
-// The settings view. Started by main.js once the popup is unlocked.
+// The settings view. Started by main.js once the popup is unlocked. Layout fixes and the report live in report.js.
 const METHOD_ORDER = ["blur", "flip", "pixelate", "opacity", "redact"];
 
 const blurRange = document.getElementById("blur-val");
@@ -16,6 +16,11 @@ const passwordConfirm = document.getElementById("password-confirm");
 const passwordMessage = document.getElementById("password-message");
 const importInput = document.getElementById("import-data");
 const importConfirm = document.getElementById("import-confirm");
+const layoutFixesSwitch = document.getElementById("layout-fixes");
+const layoutFixesStatus = document.getElementById("layout-fixes-status");
+const checkFixesButton = document.getElementById("check-fixes");
+const reportDetails = document.getElementById("report-details");
+const reportPreview = document.getElementById("report-preview");
 
 function chips(group) {
 	return [...document.querySelectorAll(`.chips[data-group="${group}"] .chip`)];
@@ -50,6 +55,7 @@ function showSettings(data) {
 		? "Unlocks locked chats and this popup."
 		: "Not set yet. Locked chats and this popup need one.";
 	passwordCurrent.hidden = !hasPassword;
+	showLayoutFixes(data.preferences);
 }
 
 // Reads the latest stored data, applies `change` to it and saves it, so a save never undoes changes made
@@ -69,6 +75,23 @@ function saveObfuscation() {
 		obfMethod.blurIntensity = Number(blurRange.value);
 		obfMethod.brightnessIntensity = Number(opacityRange.value);
 	});
+}
+
+// ---------- layout fixes ----------
+
+async function showLayoutFixes(preferences) {
+	const { pageRules, rulesCheck } = await storage.get(DEVICE_KEYS);
+	layoutFixesSwitch.checked = !!preferences.layoutFixes;
+	checkFixesButton.hidden = !preferences.layoutFixes;
+	layoutFixesStatus.textContent = layoutFixesText(preferences, pageRules, rulesCheck);
+}
+
+async function checkLayoutFixes() {
+	checkFixesButton.disabled = true;
+	const result = await requestPageRules();
+	checkFixesButton.disabled = false;
+	if (!result.ok) showToast(result.error);
+	else showToast(result.changed ? "Got new layout fixes" : "Layout fixes are up to date");
 }
 
 // ---------- password ----------
@@ -175,6 +198,17 @@ async function initSettings() {
 
 	passwordButton.addEventListener("click", () => togglePasswordForm());
 	passwordForm.addEventListener("submit", savePassword);
+
+	layoutFixesSwitch.addEventListener("change", async () => {
+		await setLayoutFixes(layoutFixesSwitch.checked);
+		if (layoutFixesSwitch.checked) await checkLayoutFixes();
+		else showToast("Saved");
+	});
+	checkFixesButton.addEventListener("click", () => checkLayoutFixes());
+	// The preview is made when it's opened, so it shows the page as it is now.
+	reportDetails.addEventListener("toggle", async () => {
+		if (reportDetails.hasAttribute("open")) reportPreview.textContent = await buildReport();
+	});
 
 	document.getElementById("export-data").addEventListener("click", () => exportDataToJson());
 	importInput.addEventListener("change", chooseImportFile);

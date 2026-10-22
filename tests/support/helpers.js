@@ -27,7 +27,11 @@ async function waitFor(condition, ms = 8000) {
 	}
 	return condition();
 }
-const errors = (world) => world.log.filter((line) => /threw/.test(line));
+// Errors thrown, and errors the content scripts caught and kept for the report (see js/content/health.js).
+const errors = (world) => [
+	...world.log.filter((line) => /threw/.test(line)),
+	...world.run("typeof healthLog === 'undefined' ? [] : healthLog.filter((e) => e.kind === 'error').map((e) => e.text)"),
+];
 
 // ---------- synthetic pages, shaped like the live ones (see fixtures/ for real captures) ----------
 

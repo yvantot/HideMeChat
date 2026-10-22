@@ -72,9 +72,79 @@ module.exports = async (check) => {
 		check("show hidden: disabled off Messenger", w.doc.getElementById("toggle-hiddenall").disabled);
 	}
 	{
-		const w = await open(stored([]), { responses: { health: { ok: false, missing: ["chatList", "messages"], showHiddenChats: false } } });
-		const warning = w.doc.getElementById("page-health");
-		check("warning names what's missing", !warning.hidden && /can't find the chat list, messages on this page/.test(warning.textContent));
+		const broken = { ok: false, missing: ["chatList", "messageRow"], showHiddenChats: false };
+		const w = await open(stored([chat("1", { isHidden: true, chatName: "Secret Name" })]), { responses: { health: broken } });
+		const $ = (id) => w.doc.getElementById(id);
+		check("warning names what's missing", !$("page-health").hidden && /can't find the chat list, message rows on this page/.test($("page-health-text").textContent));
+		check("warning offers layout fixes, saying what they mean", $("get-fixes").textContent === "Get layout fixes" && !$("page-health-hint").hidden && /GitHub sees your IP address/.test($("page-health-hint").textContent));
+
+		// GitHub has a fix: the page picks it up, and the warning goes.
+		w.runtimeResponses.pageRulesFetch = { ok: true, version: "2026-11-03", changed: true };
+		const getting = $("get-fixes").dispatch("click");
+		await settleAll();
+		check("get fixes: turns layout fixes on and checks GitHub", w.storage.preferences.layoutFixes === true && w.log.includes('runtime.sendMessage {"message":"pageRulesFetch"}') && $("get-fixes").disabled);
+		w.tabResponses.health = { ok: true, missing: [], showHiddenChats: false };
+		w.clock.advance(600);
+		await settleAll();
+		check("get fixes: the warning fades out once the page is fine", $("page-health").classList.contains("leaving"));
+		w.clock.advance(300);
+		await getting;
+		check("get fixes: then goes, and says so", $("page-health").hidden && $("toast").textContent === "Fixed by the latest layout rules");
+	}
+	{
+		const broken = { ok: false, missing: ["messageRow"], showHiddenChats: false };
+		const w = await open(stored([], { layoutFixes: true }), { responses: { health: broken } });
+		const $ = (id) => w.doc.getElementById(id);
+		check("layout fixes already on: offers a check, no explanation", $("get-fixes").textContent === "Check for fixes" && $("page-health-hint").hidden);
+		w.runtimeResponses.pageRulesFetch = { ok: true, version: "2026-11-03", changed: false };
+		const checking = $("get-fixes").dispatch("click");
+		await settleAll();
+		w.clock.advance(600);
+		await checking;
+		check("no fix yet: says so and points to the report", !$("page-health").hidden && /no fix for this yet. Copy the report/.test($("page-health-text").textContent) && !$("get-fixes").disabled);
+		w.runtimeResponses.pageRulesFetch = { ok: false, error: "Couldn't reach GitHub." };
+		await $("get-fixes").dispatch("click");
+		await settleAll();
+		check("check fails: says why", $("toast").textContent === "Couldn't reach GitHub." && !$("get-fixes").disabled);
+	}
+	{
+		const at = new Date(2026, 9, 22, 10, 31, 2).getTime();
+		const health = {
+			kind: "messenger",
+			chatOpen: true,
+			ok: false,
+			missing: ["messageRow"],
+			showHiddenChats: false,
+			parts: { chatList: "main", conversation: "backup 1", messageRow: "missing", sticker: "none", messageText: "rule 1" },
+			rules: "2026-11-03",
+			loadedAt: at,
+			log: [
+				{ kind: "rules", text: "Using layout rules 2026-11-03 from GitHub", first: at, last: at, count: 1 },
+				{ kind: "error", text: "page update: TypeError: x is null", first: at, last: at + 60000, count: 4 },
+			],
+		};
+		const w = await open(stored([chat("1", { isHidden: true, chatName: "Secret Name" })]), { tabs: [{ id: 7, url: "https://www.messenger.com/t/1" }], responses: { health } });
+		await w.doc.querySelector("#page-health .copy-report").dispatch("click");
+		await settleAll();
+		const report = w.clipboard ?? "";
+		const lines = report.split("\n");
+		check("report: copied, says so", w.doc.getElementById("toast").textContent === "Report copied" && lines[0] === "Hide Me Chat 3.0.0, Chrome 141, Windows", lines[0]);
+		check("report: layout fixes off", lines[1] === "Layout fixes: Off. Hide Me Chat doesn't connect to anything.");
+		check("report: the page and its rules", report.includes("Page: messenger.com, with a chat open\nLayout rules on the page: 2026-11-03 from GitHub"));
+		check(
+			"report: each part, how it was found",
+			report.includes("  chat list: found by its main way\n  open chat: found by backup way 1\n  message rows: not found, and this page needs it\n  stickers: not on the page now\n  message text: found by GitHub rule 1"),
+			report
+		);
+		check("report: the log, with repeats counted", report.includes("Since the page loaded at 10:31:02:\n  10:31:02 Using layout rules 2026-11-03 from GitHub\n  10:31:02 (4 times, last at 10:32:02) Error in page update: TypeError: x is null"), report);
+		check("report: no chat names or links", !/Secret Name|\/t\/1/.test(report));
+	}
+	{
+		const w = await open(stored([]), { tabs: [{ id: 2, url: "https://example.com/" }] });
+		await w.doc.querySelector(".copy-report").dispatch("click");
+		await settleAll();
+		check("report off Messenger: says there's no page to look at", /No Messenger page with Hide Me Chat running in this tab/.test(w.clipboard ?? ""));
+		check("warning and report: no errors", errors(w).length === 0, errors(w).join(" | "));
 	}
 
 	// ---------- password gate ----------

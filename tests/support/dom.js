@@ -272,7 +272,8 @@ class Document {
 	}
 }
 
-// --- selectors: tag, #id, .class, [attr], [attr='v'], [attr="v"], descendant and child combinators, lists ---
+// --- selectors: tag, #id, .class, [attr], [attr='v'], [attr="v"], :is(), :not(), :has(), descendant and child
+// combinators, lists ---
 function splitTopLevel(text, sep) {
 	const parts = [];
 	let depth = 0;
@@ -282,8 +283,8 @@ function splitTopLevel(text, sep) {
 		if (quote) {
 			if (ch === quote) quote = null;
 		} else if (ch === "'" || ch === '"') quote = ch;
-		else if (ch === "[") depth++;
-		else if (ch === "]") depth--;
+		else if (ch === "[" || ch === "(") depth++;
+		else if (ch === "]" || ch === ")") depth--;
 		else if (ch === sep && depth === 0) {
 			parts.push(current);
 			current = "";
@@ -323,8 +324,8 @@ function parseComplex(text) {
 			if (quote) {
 				if (c === quote) quote = null;
 			} else if (c === "'" || c === '"') quote = c;
-			else if (c === "[") depth++;
-			else if (c === "]") depth--;
+			else if (c === "[" || c === "(") depth++;
+			else if (c === "]" || c === ")") depth--;
 			else if (depth === 0 && (/\s/.test(c) || c === ">")) break;
 			i++;
 		}
@@ -335,7 +336,7 @@ function parseComplex(text) {
 }
 
 function parseCompound(text) {
-	const compound = { tag: null, attrs: [], ids: [], classes: [] };
+	const compound = { tag: null, attrs: [], ids: [], classes: [], pseudos: [] };
 	const re = /^([a-zA-Z*][a-zA-Z0-9-]*)?/;
 	const tag = text.match(re)[1];
 	if (tag && tag !== "*") compound.tag = tag.toUpperCase();
@@ -348,6 +349,12 @@ function parseCompound(text) {
 			compound.ids.push(m[1]);
 		} else if ((m = rest.match(/^\.([-\w]+)/))) {
 			compound.classes.push(m[1]);
+		} else if ((m = rest.match(/^:(is|not|has)\(/))) {
+			const close = closingParen(rest, m[0].length - 1);
+			const arg = rest.slice(m[0].length, close);
+			compound.pseudos.push(m[1] === "has" ? { name: "has", relatives: parseRelatives(arg) } : { name: m[1], groups: parseSelector(arg) });
+			rest = rest.slice(close + 1);
+			continue;
 		} else {
 			throw new Error(`Unsupported selector part: ${rest}`);
 		}
@@ -356,7 +363,42 @@ function parseCompound(text) {
 	return compound;
 }
 
+// The index of the ")" closing the "(" at `open`.
+function closingParen(text, open) {
+	let depth = 0;
+	let quote = null;
+	for (let i = open; i < text.length; i++) {
+		const c = text[i];
+		if (quote) {
+			if (c === quote) quote = null;
+		} else if (c === "'" || c === '"') quote = c;
+		else if (c === "(") depth++;
+		else if (c === ")" && --depth === 0) return i;
+	}
+	throw new Error(`Unclosed parenthesis in: ${text}`);
+}
+
+// The relative selectors in :has(), such as "> img" or "a b": { child, steps }.
+function parseRelatives(text) {
+	return splitTopLevel(text, ",").map((part) => {
+		const trimmed = part.trim();
+		const child = trimmed.startsWith(">");
+		return { child, steps: parseComplex(child ? trimmed.slice(1).trim() : trimmed) };
+	});
+}
+
+function matchPseudo(el, pseudo) {
+	if (pseudo.name === "is") return pseudo.groups.some((g) => matchComplex(el, g));
+	if (pseudo.name === "not") return !pseudo.groups.some((g) => matchComplex(el, g));
+	// :has(): some element below matches the relative selector, starting from `el` itself.
+	return pseudo.relatives.some(({ child, steps }) => {
+		const anchored = [{ combinator: null, compound: { anchor: el } }, { ...steps[0], combinator: child ? ">" : " " }, ...steps.slice(1)];
+		return el.descendants().some((d) => matchComplex(d, anchored));
+	});
+}
+
 function matchCompound(el, c) {
+	if (c.anchor) return el === c.anchor;
 	if (!(el instanceof Element)) return false;
 	if (c.tag && el.tagName !== c.tag) return false;
 	for (const a of c.attrs) {
@@ -371,6 +413,7 @@ function matchCompound(el, c) {
 	for (const id of c.ids) if (el.getAttribute("id") !== id) return false;
 	const classes = (el.getAttribute("class") || "").split(/\s+/);
 	for (const cls of c.classes) if (!classes.includes(cls)) return false;
+	for (const pseudo of c.pseudos) if (!matchPseudo(el, pseudo)) return false;
 	return true;
 }
 

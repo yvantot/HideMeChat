@@ -33,18 +33,23 @@ Hover over anything to see it clearly.
 
 💾 **Backup**: export your chats and settings to a file and import them again, from any version of Hide Me Chat.
 
+🔧 **Layout fixes** (off unless you turn them on): when Messenger changes its layout, get small fixes from this project's GitHub page once a day, without waiting for a new version. They're page rules that tell Hide Me Chat where to find things, never code. If the popup warns that something is missing, it offers to turn them on.
+
+🩺 **Report a problem**: copy a report of what Hide Me Chat sees on a page (how it finds each part and any errors, with no names, messages or links) to paste into a bug report.
+
 ## What it can and can't protect
 
 - It stops people from reading your chats over your shoulder or while briefly using your computer. Everything happens on your screen only: your chats aren't changed, and other people see them as usual.
 - It doesn't stop someone who has your unlocked computer for a while and knows their way around a browser. They can use the browser's developer tools, turn the extension off, or open Messenger on another browser or device.
 - Facebook and Messenger still have all your messages. Hide Me Chat doesn't encrypt anything.
+- Hide Me Chat makes no network requests of its own unless you turn on layout fixes. Then it downloads one small file from GitHub (raw.githubusercontent.com) once a day, without cookies; GitHub sees your IP address, and nothing about you or your chats is sent.
 - Locked and obfuscated chats are matched to Facebook pop-ups by the chat's name. If you rename a chat, open the extension's popup once while Messenger is open so it picks up the new name.
 
 ## What's new in 3.0.0
 
 - Works with today's facebook.com and messenger.com again, including encrypted chats.
 - The right-click menu works again.
-- Finds the page's parts by their structure rather than Facebook's ever-changing class names, and the popup warns you if Messenger's layout changes in a way it can't follow.
+- Finds the page's parts by their structure rather than Facebook's ever-changing class names, with backup ways for each. The popup warns you if Messenger's layout changes in a way it can't follow, offers layout fixes, and lets you copy a report.
 - Reacts to page changes instead of checking the page several times a second.
 - Pinned chats move to the top without fighting Messenger; Facebook pop-ups follow each chat's own settings.
 - An honest lock: hashed password, a lock form the page can't read, a locked popup, hidden previews and pop-ups, and no more stuck password prompts.
@@ -59,7 +64,9 @@ There's no build step: load the folder with **Load unpacked** in `chrome://exten
 
 - **Tests:** `node tests/run.js` (Node 20 or newer, no dependencies). They run the real scripts against a small fake DOM and Chrome API, including sanitized captures of the live pages in `tests/fixtures/`.
 - **New page captures:** when Messenger changes its layout, paste `tests/tools/snapshot.js` into the DevTools console on the page. It copies a sanitized capture: no names, messages or ids.
-- **Releasing:** see `docs/release-checklist.md`.
+- **Layout rules:** the file layout fixes download is `rules/page-rules.json`; `rules/README.md` explains its format and how to ship a fix.
+- **Releasing:** see `docs/release-checklist.md`. The Chrome Web Store text is in `store/listing.md`, and `python store/render.py` redraws its images (needs Chrome and Pillow).
+- **Privacy policy:** `PRIVACY.md`.
 - **Font:** Quicksand, by The Quicksand Project Authors, under the SIL Open Font License 1.1 (`fonts/Quicksand-OFL.txt`).
 
 <details>

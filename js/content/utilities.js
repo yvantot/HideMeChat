@@ -1,26 +1,11 @@
 const storage = chrome.storage.local;
 
-// Parts inside chat rows and messages. The containers themselves are found by Page (page.js).
-const SELECTORS = {
-	VIRTUALIZED: "div[data-virtualized='false']",
-	MESSAGEROW: "div[data-scope='messages_table']",
-	CHATLINK: "a",
-	TEXT: "div[dir='auto']",
-	TEXTSPAN: "span[dir='auto']",
-	STICKERS: "div[role='img']",
-	REPLYTEXT: "div[class='xi81zsa x126k92a']",
-};
-
-// Returns the details of every chat currently rendered in the chat list, or null if there are none.
+// Returns the details of every chat currently rendered in the chat list, or null if there are none. Each row
+// of the list holds a chat's link; rows not rendered yet have none.
 function getAllChat() {
-	const chatLinks = Page.chatList()?.querySelectorAll(`${SELECTORS.VIRTUALIZED} ${SELECTORS.CHATLINK}`);
-	if (!chatLinks) return null;
-
-	const chats = [];
-	chatLinks.forEach((chatLink) => {
-		const chat = getChatInfo(chatLink);
-		if (chat) chats.push(chat);
-	});
+	const list = Page.chatList();
+	if (!list) return null;
+	const chats = [...list.children].map((row) => getChatInfo(row.querySelector("a[href]"))).filter(Boolean);
 	return chats.length === 0 ? null : chats;
 }
 
@@ -29,7 +14,7 @@ function getChatInfo(chatLink) {
 	return {
 		url: getChatId(chatLink.href),
 		img: chatLink.querySelector("img")?.src,
-		name: chatLink.querySelector(SELECTORS.TEXTSPAN)?.innerText,
+		name: Parts.first("chatName", chatLink)?.innerText,
 		lastMsg: getLastMessageTime(chatLink) || "#",
 	};
 }

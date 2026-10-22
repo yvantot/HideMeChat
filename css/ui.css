@@ -404,6 +404,56 @@ input[type="color"].swatch::-webkit-color-swatch {
 	color: var(--notice-text);
 	font-size: 12.5px;
 	animation: rise 0.3s var(--ease) both;
+	transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.notice.leaving {
+	opacity: 0;
+	transform: translateY(-6px);
+}
+.notice-hint {
+	margin-top: 6px;
+	opacity: 0.85;
+}
+.notice .row {
+	margin-top: 10px;
+}
+.notice .button {
+	background: var(--surface);
+	color: var(--text);
+}
+.notice .button:hover {
+	background: var(--surface-2);
+}
+.button.small {
+	padding: 6px 12px;
+	font-size: 12.5px;
+}
+.report {
+	margin-top: 10px;
+}
+.report summary {
+	width: fit-content;
+	color: var(--accent);
+	font-size: 12.5px;
+	font-weight: 600;
+	cursor: pointer;
+	list-style: none;
+}
+.report summary::-webkit-details-marker {
+	display: none;
+}
+.report pre {
+	max-height: 200px;
+	margin: 8px 0 0;
+	padding: 10px 12px;
+	overflow: auto;
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
+	color: var(--text);
+	font: 11.5px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
+	white-space: pre-wrap;
+	word-break: break-word;
+	animation: rise 0.25s var(--ease) both;
 }
 .count {
 	display: inline-block;

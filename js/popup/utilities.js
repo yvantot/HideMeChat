@@ -24,6 +24,16 @@ async function getActiveTab() {
 	return tab;
 }
 
+// Sends `message` to Hide Me Chat on the active tab. Resolves with the answer, or null when the tab isn't a
+// Messenger page with Hide Me Chat running (for example one opened before it was installed).
+async function askActiveTab(message) {
+	const tab = await getActiveTab();
+	if (!tab?.url || !isValidLink(tab.url)) return null;
+	return new Promise((resolve) => {
+		chrome.tabs.sendMessage(tab.id, message, (answer) => resolve(chrome.runtime.lastError ? null : answer ?? null));
+	});
+}
+
 // Plays a CSS exit (`className` adds the end state) and resolves once it has had time to run.
 function animateOut(element, className = "leaving", ms = 250) {
 	element.classList.add(className);
