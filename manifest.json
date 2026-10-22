@@ -10,34 +10,34 @@
         "activeTab"
     ],
     "icons": {
-        "16": "./assets/hidechat_icon16.png",
-        "32": "./assets/hidechat_icon32.png",
-        "48": "./assets/hidechat_icon48.png",
-        "128": "./assets/hidechat_icon128.png",
-        "256": "./assets/hidechat_icon256.png"
+        "16": "assets/hidechat_icon16.png",
+        "32": "assets/hidechat_icon32.png",
+        "48": "assets/hidechat_icon48.png",
+        "128": "assets/hidechat_icon128.png",
+        "256": "assets/hidechat_icon256.png"
     },
     "action": {
         "default_icon": {
-            "16": "./assets/hidechat_icon16.png",
-            "24": "./assets/hidechat_icon32.png",
-            "32": "./assets/hidechat_icon32.png"
+            "16": "assets/hidechat_icon16.png",
+            "24": "assets/hidechat_icon32.png",
+            "32": "assets/hidechat_icon32.png"
         },
-        "default_popup": "./html/popup.html",
+        "default_popup": "html/popup.html",
         "default_title": "Hide Me Chat"
     },
     "content_scripts": [
         {
             "js": [
-                "./js/shared/pageParts.js",
-                "./js/content/utilities.js",
-                "./js/content/health.js",
-                "./js/content/parts.js",
-                "./js/content/page.js",
-                "./js/content/hide.js",
-                "./js/content/pin.js",
-                "./js/content/lock.js",
-                "./js/content/obfuscate.js",
-                "./js/content/main.js"
+                "js/shared/pageParts.js",
+                "js/content/utilities.js",
+                "js/content/health.js",
+                "js/content/parts.js",
+                "js/content/page.js",
+                "js/content/hide.js",
+                "js/content/pin.js",
+                "js/content/lock.js",
+                "js/content/obfuscate.js",
+                "js/content/main.js"
             ],
             "matches": [
                 "*://www.messenger.com/*",
@@ -58,6 +58,6 @@
         }
     ],
     "background": {
-        "service_worker": "./js/background/handleData.js"
+        "service_worker": "js/background/handleData.js"
     }
 }
