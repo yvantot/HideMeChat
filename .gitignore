@@ -1,2 +1,6 @@
 # Upload packages for the Chrome Web Store, built from the committed files (docs/release-checklist.md).
 *.zip
+
+# The official Messenger and Facebook logos, from Meta's Brand Resource Center: used in the promo tiles, not
+# republished here (see store/listing.md).
+store/logos/

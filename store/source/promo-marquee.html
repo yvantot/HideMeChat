@@ -10,26 +10,52 @@
 			width: 1400px;
 			height: 560px;
 		}
-		.badge {
-			left: 110px;
-			top: 190px;
-			width: 180px;
-			height: 180px;
-			border-radius: 50px;
+		.name {
+			left: 90px;
+			top: 58px;
+			gap: 12px;
+			font-size: 24px;
 		}
-		.badge img {
-			width: 138px;
-			height: 138px;
+		.name img {
+			width: 44px;
+			height: 44px;
 		}
-		.brand {
-			left: 330px;
-			top: 208px;
-		}
-		.brand h1 {
+		.headline-big {
+			left: 90px;
+			top: 140px;
 			font-size: 66px;
 		}
-		.brand p {
-			font-size: 26px;
+		.sub {
+			left: 92px;
+			top: 302px;
+			font-size: 25px;
+		}
+		.features {
+			left: 90px;
+			top: 378px;
+			gap: 22px;
+		}
+		.feature {
+			gap: 8px;
+			font-size: 17px;
+		}
+		.feature i {
+			width: 66px;
+			height: 66px;
+		}
+		.feature svg {
+			width: 34px;
+			height: 34px;
+		}
+		.logos {
+			left: 520px;
+			top: 384px;
+			gap: 26px;
+			padding: 12px 14px;
+		}
+		.logos img {
+			width: 48px;
+			height: 48px;
 		}
 		iframe.popup {
 			box-shadow: 0 30px 80px rgba(10, 8, 40, 0.45);
@@ -37,15 +63,17 @@
 	</style>
 </head>
 <body class="promo">
-	<span class="pill" style="left: 760px; top: 60px; width: 220px"></span>
-	<span class="pill" style="left: 700px; top: 450px; width: 260px"></span>
-	<span class="pill" style="left: 1260px; top: 470px; width: 200px"></span>
-	<span class="pill" style="left: 60px; top: 470px; width: 180px"></span>
-	<div class="badge"><img src="../../assets/hidechat_icon256.png" alt="" /></div>
-	<div class="brand">
-		<h1>Hide Me Chat</h1>
-		<p>Keep your Messenger chats to yourself</p>
+	<span class="pill" style="left: 700px; top: 40px; width: 220px"></span>
+	<span class="pill" style="left: 1260px; top: 486px; width: 200px"></span>
+	<div class="name"><img src="../../assets/hidechat_icon256.png" alt="" />Hide Me Chat</div>
+	<h1 class="headline-big">Hide, pin, blur or lock<br /><span>your Messenger chats</span></h1>
+	<p class="sub">On facebook.com and messenger.com</p>
+	<div class="features" id="features" data-labels></div>
+	<div class="logos" id="logos">
+		<img src="../logos/messenger.svg" alt="" />
+		<img src="../logos/facebook.png" alt="" />
 	</div>
 	<iframe class="popup dark" src="../../html/popup.html?dark" style="left: 960px; top: 68px; height: 424px"></iframe>
+	<script src="promo.js"></script>
 </body>
 </html>

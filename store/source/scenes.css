@@ -77,12 +77,19 @@ body {
 	border-radius: 50%;
 	background: #d6d9e4;
 }
+/* The site the page is on, so it's clear Hide Me Chat works on Messenger. */
 .window .bar .address {
+	display: flex;
+	align-items: center;
 	width: 340px;
 	height: 24px;
 	margin-left: 18px;
+	padding: 0 14px;
 	border-radius: 999px;
 	background: #fff;
+	color: var(--muted);
+	font-size: 13px;
+	font-weight: 600;
 }
 .window .bar .extension {
 	margin-left: auto;
@@ -109,10 +116,20 @@ body {
 	font-size: 23px;
 }
 .search {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 	height: 36px;
 	margin: 0 10px 10px;
+	padding: 0 14px;
 	border-radius: 999px;
 	background: var(--soft);
+	color: var(--muted);
+	font-size: 14px;
+}
+.search svg {
+	width: 16px;
+	height: 16px;
 }
 .row {
 	position: relative;

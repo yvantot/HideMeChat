@@ -10,37 +10,55 @@
 			width: 440px;
 			height: 280px;
 		}
-		.badge {
-			left: 40px;
-			top: 72px;
-			width: 136px;
-			height: 136px;
-			border-radius: 38px;
+		.name {
+			left: 24px;
+			top: 20px;
+			gap: 8px;
+			font-size: 15px;
 		}
-		.badge img {
-			width: 104px;
-			height: 104px;
+		.name img {
+			width: 28px;
+			height: 28px;
 		}
-		.brand {
-			left: 200px;
-			top: 96px;
+		.headline-big {
+			left: 24px;
+			top: 62px;
+			font-size: 31px;
 		}
-		.brand h1 {
-			font-size: 33px;
+		.features {
+			left: 24px;
+			bottom: 24px;
+			gap: 10px;
 		}
-		.brand p {
-			font-size: 16px;
+		.feature i {
+			width: 42px;
+			height: 42px;
+		}
+		.feature svg {
+			width: 24px;
+			height: 24px;
+		}
+		.logos {
+			right: 22px;
+			bottom: 26px;
+			gap: 16px;
+			padding: 8px 10px;
+		}
+		.logos img {
+			width: 30px;
+			height: 30px;
 		}
 	</style>
 </head>
 <body class="promo">
-	<span class="pill" style="left: 250px; top: 26px; width: 150px"></span>
-	<span class="pill" style="left: 300px; top: 222px; width: 120px"></span>
-	<span class="pill" style="left: -30px; top: 236px; width: 140px"></span>
-	<div class="badge"><img src="../../assets/hidechat_icon256.png" alt="" /></div>
-	<div class="brand">
-		<h1>Hide Me Chat</h1>
-		<p>Keep your chats to yourself</p>
+	<span class="pill" style="left: 300px; top: 18px; width: 150px"></span>
+	<div class="name"><img src="../../assets/hidechat_icon256.png" alt="" />Hide Me Chat</div>
+	<h1 class="headline-big">Hide, pin, blur or lock<br /><span>your Messenger chats</span></h1>
+	<div class="features" id="features"></div>
+	<div class="logos" id="logos">
+		<img src="../logos/messenger.svg" alt="" />
+		<img src="../logos/facebook.png" alt="" />
 	</div>
+	<script src="promo.js"></script>
 </body>
 </html>

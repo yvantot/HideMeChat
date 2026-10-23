@@ -1,36 +1,77 @@
-/* The promo tiles: the logo on a white badge and the name, on a saturated gradient (the store shows tiles on light
-   gray, so they shouldn't be light themselves). */
+/* The promo tiles: what Hide Me Chat does comes first, in a big headline with its four features; the name is small,
+   in the corner. The store shows tiles on light gray, so they're a saturated gradient rather than light. */
 body.promo {
 	color: #fff;
 	background:
 		radial-gradient(70% 90% at 0% 0%, rgba(255, 255, 255, 0.18) 0%, transparent 60%),
 		linear-gradient(125deg, #5d6cf0 0%, #6a55e6 55%, #8146d8 100%);
 }
-.badge {
+.name {
 	position: absolute;
-	display: grid;
-	place-items: center;
+	display: flex;
+	align-items: center;
+	font-weight: 700;
+}
+.name img {
+	border-radius: 22%;
 	background: #fff;
-	box-shadow: 0 18px 40px rgba(20, 10, 70, 0.3);
 }
-.brand {
+.headline-big {
 	position: absolute;
-}
-.brand h1 {
 	margin: 0;
 	font-weight: 700;
-	letter-spacing: -0.5px;
-	line-height: 1.1;
+	letter-spacing: -0.4px;
+	line-height: 1.12;
 }
-.brand p {
-	margin: 8px 0 0;
+.headline-big span {
+	color: #ffe27a;
+}
+.sub {
+	position: absolute;
+	margin: 0;
 	color: rgba(255, 255, 255, 0.85);
 	font-weight: 600;
+}
+.features {
+	position: absolute;
+	display: flex;
+}
+.feature {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	color: #fff;
+	font-weight: 700;
+}
+.feature i {
+	display: grid;
+	place-items: center;
+	border-radius: 28%;
+	background: rgba(255, 255, 255, 0.18);
+}
+.feature svg {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.9;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+/* Messenger's and Facebook's logos, exactly as Meta provides them, on white (their primary versions are made for
+   white), each with clear space of at least a quarter of its width and no words beside them. */
+.logos {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	border-radius: 999px;
+	background: #fff;
+}
+.logos[hidden] {
+	display: none;
 }
 .pill {
 	position: absolute;
 	height: 34px;
 	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.14);
+	background: rgba(255, 255, 255, 0.12);
 	filter: blur(1px);
 }

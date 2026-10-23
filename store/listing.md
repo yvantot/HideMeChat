@@ -4,6 +4,12 @@ Everything to fill in the [developer dashboard](https://chrome.google.com/websto
 `store/media/`. To redraw them after a UI or logo change, run `python store/render.py` (or add `--logo new.svg` to redraw
 the extension's icons too).
 
+The promo tiles show Messenger's and Facebook's official logos, which aren't in git. Before redrawing the tiles, download
+both packs from Meta's Brand Resource Center ([Messenger icon](https://www.meta.com/brand/resources/facebook/messenger-icon/),
+[Facebook logo](https://www.meta.com/brand/resources/facebook/logo/)), accepting Meta's terms, and save the primary versions
+as `store/logos/messenger.svg` and `store/logos/facebook.png`. Without them the tiles leave the logos out. Meta's rules:
+use them exactly as provided, on white, with clear space of a quarter of their width, and no words beside them.
+
 ## Package
 
 Upload `hide-me-chat-3.0.0.zip`, built from the committed files as in `docs/release-checklist.md`. The listing's name and short
@@ -28,6 +34,8 @@ Right-click a chat and choose Hide Me Chat:
 Click the extension's icon to see your chats, switch features on or off, and change settings. Light and dark themes.
 
 Your chats aren't changed, and other people see them as usual. Everything stays in your browser.
+
+Hide Me Chat is not affiliated with or endorsed by Meta. Messenger and Facebook are trademarks of Meta Platforms, Inc.
 ```
 
 **Category:** Social Media & Networking
@@ -42,7 +50,22 @@ Your chats aren't changed, and other people see them as usual. Everything stays 
 | Screenshots (1280x800), in this order | `screenshot-1.png` to `screenshot-5.png` |
 | Small promo tile (440x280) | `store/media/promo-small.png` |
 | Marquee promo tile (1400x560, optional) | `store/media/promo-marquee.png` |
-| Promo video | none |
+| Promo video | the YouTube link to `store/media/demo-video.mp4` (see below) |
+
+**Promo video.** Upload `store/media/demo-video.mp4` to YouTube (public or unlisted), then paste its link in the
+dashboard. It's silent, so YouTube's audio library can add music if you like. To redraw it after a UI change, run
+`node store/video/render.mjs`.
+
+- **YouTube title:** Hide Me Chat: hide, pin, obfuscate or lock Messenger chats
+- **YouTube description:**
+
+```
+Hide Me Chat keeps your Messenger chats away from people looking at your screen, on facebook.com and messenger.com.
+
+Right-click a chat and choose Hide Me Chat to hide it, pin it to the top, obfuscate it (hover to read) or lock it with a password. The popup shows all your chats and settings, in light or dark.
+
+Chrome Web Store: (link to the listing)
+```
 
 **Homepage URL:** https://github.com/yvantot/HideMeChat
 
